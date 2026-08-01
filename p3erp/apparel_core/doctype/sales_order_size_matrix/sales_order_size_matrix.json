@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "creation": "2026-08-01 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "size_code",
+  "hs_qty",
+  "fs_qty",
+  "sl_qty",
+  "total_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "size_code",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Size",
+   "options": "22\n24\n26\n28\n30\n32\n34\n36\n38\n40\n42\n44\n46\n48\n50\n52\n54",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "hs_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Half Sleeve (H-S) Qty"
+  },
+  {
+   "default": "0",
+   "fieldname": "fs_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Full Sleeve (F-S) Qty"
+  },
+  {
+   "default": "0",
+   "fieldname": "sl_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sleeveless (S-L) Qty"
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Qty",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "module": "Apparel Core",
+ "name": "Sales Order Size Matrix"
+}

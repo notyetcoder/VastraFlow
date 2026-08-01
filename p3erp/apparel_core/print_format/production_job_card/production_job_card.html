@@ -1,0 +1,67 @@
+<div class="job-card-wrapper" style="font-family: Arial, sans-serif; padding: 15px; color: #0f172a;">
+    <style>
+        @page { size: A4; margin: 10mm; }
+        .hover-zoom { transition: transform 0.2s ease; cursor: pointer; }
+        .hover-zoom:hover { transform: scale(1.8); z-index: 1000; position: relative; }
+    </style>
+
+    <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px;">
+        <div>
+            <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a;">PRODUCTION JOB CARD</h2>
+            <span style="font-size: 11px; color: #64748b;">P3ERP Apparel Manufacturing System</span>
+        </div>
+        <div style="text-align: right;">
+            <h3 style="margin: 0; font-size: 16px; color: #0284c7;">{{ doc.name }}</h3>
+            <span style="font-size: 11px;">Order Date: {{ doc.creation[:10] }}</span>
+        </div>
+    </div>
+
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 12px;">
+        <div><strong>Sales Order:</strong> {{ doc.sales_order }}</div>
+        <div><strong>Customer:</strong> {{ doc.customer }}</div>
+        <div><strong>Product:</strong> {{ doc.product_type }}</div>
+        <div><strong>Total Qty:</strong> <span style="font-weight: 700; color: #0284c7;">{{ doc.total_qty }} Pcs</span></div>
+    </div>
+
+    <div style="display: flex; gap: 15px;">
+        <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+            <h4 style="margin-top: 0; font-size: 13px; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">PRINT & DESIGN SPECS</h4>
+            <ul style="list-style: none; padding-left: 0; font-size: 12px; line-height: 1.8;">
+                <li><strong>Fabric:</strong> {{ doc.fabric or 'N/A' }}</li>
+                <li><strong>Collar Style:</strong> {{ doc.collar_type or 'Standard' }}</li>
+                <li><strong>Buttons:</strong> {{ doc.button_qty or '0' }} Buttons</li>
+                <li><strong>Sublimation:</strong> {{ doc.print_sublimation_type }}</li>
+                <li><strong>Solid Panel:</strong> {{ doc.solid_colour or 'N/A' }}</li>
+            </ul>
+
+            <div style="margin-top: 10px; text-align: center; border: 1px dashed #2563eb; padding: 8px; border-radius: 6px; background: #fafafa;">
+                <span style="font-size: 10px; font-weight: 700; color: #2563eb; display: block; margin-bottom: 4px;">ARTWORK PREVIEW (Hover/Zoom)</span>
+                {% if doc.artwork_file %}
+                    <img src="{{ doc.artwork_file }}" class="hover-zoom" style="max-width: 100%; max-height: 180px; object-fit: contain;" />
+                {% else %}
+                    <span style="color: #94a3b8; font-size: 11px;">No Artwork Attached</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="flex: 1.3; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+            <h4 style="margin-top: 0; font-size: 13px; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">CUTTING & SEWING BREAKDOWN</h4>
+            <div style="font-size: 11px; margin-top: 8px;">
+                {{ doc.size_sleeve_html }}
+            </div>
+
+            <h4 style="margin-top: 20px; font-size: 12px; font-weight: 700;">DEPARTMENT SIGN-OFF</h4>
+            <table class="table table-bordered" style="font-size: 10px; margin-top: 6px;">
+                <tr><td>[  ] Sublimation / Printing</td><td>Sign: ____________</td></tr>
+                <tr><td>[  ] Cutting Floor</td><td>Sign: ____________</td></tr>
+                <tr><td>[  ] Sewing & Assembly</td><td>Sign: ____________</td></tr>
+                <tr><td>[  ] QC & Packaging</td><td>Sign: ____________</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; border-top: 1px solid #cbd5e1; pt: 8px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
+        <span>P3ERP Dynamic Engine Routing: {{ doc.bom_strategy }}</span>
+        <span>Page 1 of 1</span>
+    </div>
+</div>

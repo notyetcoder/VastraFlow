@@ -1,0 +1,169 @@
+{
+ "actions": [],
+ "creation": "2026-08-01 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sales_order",
+  "customer",
+  "product_type",
+  "column_break_1",
+  "fabric",
+  "collar_type",
+  "button_qty",
+  "section_break_sublimation",
+  "print_sublimation_type",
+  "solid_colour",
+  "artwork_file",
+  "bom_strategy",
+  "section_break_matrix",
+  "size_sleeve_html",
+  "size_matrix",
+  "total_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "sales_order.customer",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "label": "Product Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fabric",
+   "fieldtype": "Link",
+   "label": "Fabric",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "collar_type",
+   "fieldtype": "Link",
+   "label": "Collar Type",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "button_qty",
+   "fieldtype": "Select",
+   "label": "Button Qty",
+   "options": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "section_break_sublimation",
+   "fieldtype": "Section Break",
+   "label": "Sublimation & Printing Details"
+  },
+  {
+   "fieldname": "print_sublimation_type",
+   "fieldtype": "Select",
+   "label": "Sublimation Type",
+   "options": "Front Sublimation\nBack Sublimation\nFront & Back Sublimation\nFull Sublimation\nFront Logo Only\nBack A4 Size\nOther Custom"
+  },
+  {
+   "fieldname": "solid_colour",
+   "fieldtype": "Link",
+   "label": "Solid Panel Colour",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "artwork_file",
+   "fieldtype": "Attach Image",
+   "label": "Artwork File"
+  },
+  {
+   "default": "BYPASS_BOM",
+   "fieldname": "bom_strategy",
+   "fieldtype": "Select",
+   "label": "BOM Routing Strategy",
+   "options": "MATCH_EXISTING\nAUTO_CREATE\nBYPASS_BOM"
+  },
+  {
+   "fieldname": "section_break_matrix",
+   "fieldtype": "Section Break",
+   "label": "Size & Sleeve Matrix"
+  },
+  {
+   "fieldname": "size_sleeve_html",
+   "fieldtype": "HTML",
+   "label": "Size Matrix Grid"
+  },
+  {
+   "fieldname": "size_matrix",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Size Sleeve Matrix (Data)",
+   "options": "Sales Order Size Matrix",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Int",
+   "label": "Total Quantity",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "module": "Apparel Core",
+ "name": "Apparel Order Spec",
+ "naming_rule": "Expression",
+ "autoname": "SPEC-.YYYY.-.#####",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  }
+ ]
+}
