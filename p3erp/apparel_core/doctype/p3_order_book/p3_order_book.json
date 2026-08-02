@@ -1,0 +1,329 @@
+{
+ "actions": [],
+ "creation": "2026-08-01 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "customer_address",
+  "address_display",
+  "column_break_addr",
+  "contact_person",
+  "contact_display",
+  "section_break_order",
+  "transaction_date",
+  "delivery_date",
+  "column_break_order",
+  "product_type",
+  "bom_strategy",
+  "sales_order",
+  "sales_order_status",
+  "section_break_garment",
+  "fabric",
+  "collar_type",
+  "collar_preview",
+  "column_break_garment",
+  "stitching",
+  "button_qty",
+  "section_break_sublimation",
+  "sublimation_type",
+  "column_break_sub_1",
+  "front_print",
+  "front_colour",
+  "column_break_sub_2",
+  "back_print",
+  "back_colour",
+  "column_break_sub_3",
+  "sleeve_print",
+  "sleeve_colour",
+  "artwork_file",
+  "artwork_preview_html",
+  "section_break_matrix",
+  "size_sleeve_html",
+  "size_matrix",
+  "total_qty",
+  "section_break_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_address",
+   "fieldtype": "Link",
+   "label": "Customer Address",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "address_display",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_addr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Contact Person",
+   "options": "Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contact_display",
+   "fieldtype": "Small Text",
+   "label": "Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_order",
+   "fieldtype": "Section Break",
+   "label": "Order Details"
+  },
+  {
+   "default": "Today",
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "label": "Order Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "Delivery Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_order",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "label": "Product Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "default": "BYPASS_BOM",
+   "fieldname": "bom_strategy",
+   "fieldtype": "Select",
+   "label": "BOM Routing Strategy",
+   "options": "BYPASS_BOM\nMATCH_EXISTING\nAUTO_CREATE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Linked Sales Order",
+   "options": "Sales Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_order_status",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Sales Order Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_garment",
+   "fieldtype": "Section Break",
+   "label": "Garment Specification"
+  },
+  {
+   "fieldname": "fabric",
+   "fieldtype": "Link",
+   "label": "Fabric",
+   "options": "Item Attribute Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "collar_type",
+   "fieldtype": "Link",
+   "label": "Collar Type",
+   "options": "Item"
+  },
+  {
+   "fieldname": "collar_preview",
+   "fieldtype": "HTML",
+   "label": "Collar Preview"
+  },
+  {
+   "fieldname": "column_break_garment",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stitching",
+   "fieldtype": "Link",
+   "label": "Stitching",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "button_qty",
+   "fieldtype": "Int",
+   "label": "Button Qty"
+  },
+  {
+   "fieldname": "section_break_sublimation",
+   "fieldtype": "Section Break",
+   "label": "Sublimation Specs"
+  },
+  {
+   "default": "None",
+   "fieldname": "sublimation_type",
+   "fieldtype": "Select",
+   "label": "Sublimation Type",
+   "options": "None\nFront Sublimation\nBack Sublimation\nFront & Back Sublimation\nFull Sublimation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_sub_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "front_print",
+   "fieldtype": "Select",
+   "label": "Front",
+   "options": "Solid Color\nSublimation\nLogo\nA4"
+  },
+  {
+   "fieldname": "front_colour",
+   "fieldtype": "Link",
+   "label": "Front Colour",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "column_break_sub_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "back_print",
+   "fieldtype": "Select",
+   "label": "Back",
+   "options": "Solid Color\nSublimation\nLogo\nA4"
+  },
+  {
+   "fieldname": "back_colour",
+   "fieldtype": "Link",
+   "label": "Back Colour",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "column_break_sub_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sleeve_print",
+   "fieldtype": "Select",
+   "label": "Sleeves",
+   "options": "Solid Color\nSublimation\nLogo\nA4"
+  },
+  {
+   "fieldname": "sleeve_colour",
+   "fieldtype": "Link",
+   "label": "Sleeve Colour",
+   "options": "Item Attribute Value"
+  },
+  {
+   "fieldname": "artwork_file",
+   "fieldtype": "Attach Image",
+   "label": "Artwork File"
+  },
+  {
+   "fieldname": "artwork_preview_html",
+   "fieldtype": "HTML",
+   "label": "Artwork Preview"
+  },
+  {
+   "fieldname": "section_break_matrix",
+   "fieldtype": "Section Break",
+   "label": "Size & Sleeve Matrix"
+  },
+  {
+   "fieldname": "size_sleeve_html",
+   "fieldtype": "HTML",
+   "label": "Size Matrix Grid"
+  },
+  {
+   "fieldname": "size_matrix",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Size Sleeve Matrix (Data)",
+   "options": "Sales Order Size Matrix"
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Int",
+   "label": "Total Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "module": "Apparel Core",
+ "name": "P3 Order Book",
+ "naming_rule": "Expression (old style)",
+ "autoname": "P3O-.YYYY.-.#####",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ]
+}

@@ -8,36 +8,51 @@
     <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a;">PRODUCTION JOB CARD</h2>
-            <span style="font-size: 11px; color: #64748b;">P3ERP Apparel Manufacturing System</span>
+            <span style="font-size: 11px; color: #64748b;">P3 Order Book · Apparel Manufacturing</span>
         </div>
         <div style="text-align: right;">
-            <h3 style="margin: 0; font-size: 16px; color: #0284c7;">{{ doc.name }}</h3>
-            <span style="font-size: 11px;">Order Date: {{ doc.creation[:10] }}</span>
+            <h3 style="margin: 0; font-size: 16px; color: #2490ef;">{{ doc.name }}</h3>
+            <span style="font-size: 11px;">Order Date: {{ doc.transaction_date }} &nbsp;|&nbsp; Delivery: {{ doc.delivery_date }}</span>
         </div>
     </div>
 
     <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 12px;">
-        <div><strong>Sales Order:</strong> {{ doc.sales_order }}</div>
+        <div><strong>Sales Order:</strong> {{ doc.sales_order or 'Not yet linked' }}</div>
         <div><strong>Customer:</strong> {{ doc.customer }}</div>
         <div><strong>Product:</strong> {{ doc.product_type }}</div>
-        <div><strong>Total Qty:</strong> <span style="font-weight: 700; color: #0284c7;">{{ doc.total_qty }} Pcs</span></div>
+        <div><strong>Total Qty:</strong> <span style="font-weight: 700; color: #2490ef;">{{ doc.total_qty }} Pcs</span></div>
     </div>
 
     <div style="display: flex; gap: 15px;">
         <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
             <h4 style="margin-top: 0; font-size: 13px; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">PRINT & DESIGN SPECS</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 12px; line-height: 1.8;">
+            <ul style="list-style: none; padding-left: 0; font-size: 12px; line-height: 1.7;">
                 <li><strong>Fabric:</strong> {{ doc.fabric or 'N/A' }}</li>
-                <li><strong>Collar Style:</strong> {{ doc.collar_type or 'Standard' }}</li>
-                <li><strong>Buttons:</strong> {{ doc.button_qty or '0' }} Buttons</li>
-                <li><strong>Sublimation:</strong> {{ doc.print_sublimation_type }}</li>
-                <li><strong>Solid Panel:</strong> {{ doc.solid_colour or 'N/A' }}</li>
+                <li><strong>Collar Type:</strong> {{ doc.collar_type or 'Standard' }}</li>
+                <li><strong>Stitching:</strong> {{ doc.stitching or 'N/A' }}</li>
+                <li><strong>Buttons:</strong> {{ doc.button_qty or 0 }}</li>
             </ul>
 
+            <h4 style="font-size: 12px; font-weight: 700; margin: 10px 0 4px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">SUBLIMATION — {{ doc.sublimation_type }}</h4>
+            <table class="table table-bordered" style="font-size: 10.5px; text-align: center;">
+                <thead>
+                    <tr style="background: #0f172a; color: #fff;">
+                        <th>Front</th><th>Back</th><th>Sleeves</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ doc.front_print }}{% if doc.front_colour %} ({{ doc.front_colour }}){% endif %}</td>
+                        <td>{{ doc.back_print }}{% if doc.back_colour %} ({{ doc.back_colour }}){% endif %}</td>
+                        <td>{{ doc.sleeve_print }}{% if doc.sleeve_colour %} ({{ doc.sleeve_colour }}){% endif %}</td>
+                    </tr>
+                </tbody>
+            </table>
+
             <div style="margin-top: 10px; text-align: center; border: 1px dashed #2563eb; padding: 8px; border-radius: 6px; background: #fafafa;">
-                <span style="font-size: 10px; font-weight: 700; color: #2563eb; display: block; margin-bottom: 4px;">ARTWORK PREVIEW (Hover/Zoom)</span>
+                <span style="font-size: 10px; font-weight: 700; color: #2563eb; display: block; margin-bottom: 4px;">ARTWORK PREVIEW (Hover to zoom)</span>
                 {% if doc.artwork_file %}
-                    <img src="{{ doc.artwork_file }}" class="hover-zoom" style="max-width: 100%; max-height: 180px; object-fit: contain;" />
+                    <img src="{{ doc.artwork_file }}" class="hover-zoom" style="max-width: 100%; max-height: 160px; object-fit: contain;" />
                 {% else %}
                     <span style="color: #94a3b8; font-size: 11px;">No Artwork Attached</span>
                 {% endif %}
@@ -81,7 +96,12 @@
                 {% endif %}
             </div>
 
-            <h4 style="margin-top: 20px; font-size: 12px; font-weight: 700;">DEPARTMENT SIGN-OFF</h4>
+            {% if doc.notes %}
+            <h4 style="margin-top: 14px; font-size: 12px; font-weight: 700;">NOTES</h4>
+            <div style="font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #fafbfb;">{{ doc.notes }}</div>
+            {% endif %}
+
+            <h4 style="margin-top: 14px; font-size: 12px; font-weight: 700;">DEPARTMENT SIGN-OFF</h4>
             <table class="table table-bordered" style="font-size: 10px; margin-top: 6px;">
                 <tr><td>[  ] Sublimation / Printing</td><td>Sign: ____________</td></tr>
                 <tr><td>[  ] Cutting Floor</td><td>Sign: ____________</td></tr>
@@ -91,8 +111,8 @@
         </div>
     </div>
 
-    <div style="margin-top: 20px; border-top: 1px solid #cbd5e1; pt: 8px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
-        <span>P3ERP Dynamic Engine Routing: {{ doc.bom_strategy }}</span>
+    <div style="margin-top: 20px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
+        <span>BOM Routing: {{ doc.bom_strategy }}</span>
         <span>Page 1 of 1</span>
     </div>
 </div>

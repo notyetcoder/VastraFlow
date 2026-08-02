@@ -7,8 +7,12 @@ from p3erp.bom_engine.strategies.auto_generate import AutoGenerateBOMStrategy
 
 
 class BOMDecisionEngine:
-	"""Strategy dispatcher that routes a submitted Apparel Order Spec to the
+	"""Strategy dispatcher that routes a submitted P3 Order Book to the
 	correct Work Order creation strategy based on doc.bom_strategy.
+
+	Called directly from P3OrderBook.on_submit() (not via hooks.py
+	doc_events) after the linked Sales Order has already been created, so
+	doc.sales_order is guaranteed to be set by the time this runs.
 	"""
 
 	STRATEGY_MAP = {
