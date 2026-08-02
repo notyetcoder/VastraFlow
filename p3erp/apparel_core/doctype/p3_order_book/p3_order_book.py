@@ -19,25 +19,6 @@ ZONE_COLOUR_FIELDS = {
 
 
 class P3OrderBook(Document):
-	"""P3 Order Book - a lightweight custom order-entry layer that IS a
-	Sales Order under the hood. It never diverges from core Sales Order
-	behaviour; it just adds the apparel-specific fields Sales Order doesn't
-	have. See module docstring in bom_engine/manager.py for the routing
-	side of this flow.
-
-	Lifecycle:
-	  Save    -> Draft, docstatus 0. No Sales Order touched.
-	  Submit  -> docstatus 1. Creates a real (draft) Sales Order from this
-	             doc's fields, links it back via `sales_order`, then routes
-	             to the BOM engine to create a Work Order against that real
-	             Sales Order.
-	  "Create Sales Order" button (create_sales_order_from_book) -> submits
-	             the linked Sales Order for real.
-	  Cancel  -> cascades: cancels the Sales Order if it was submitted,
-	             deletes it if it was still a draft link with nothing else
-	             built on top of it.
-	"""
-
 	def validate(self):
 		self.recalculate_matrix_totals()
 		self.validate_matrix_has_quantity()
@@ -100,28 +81,12 @@ class P3OrderBook(Document):
 			frappe.throw(_("Delivery Date cannot be before Order Date."))
 
 	def validate_sublimation_zones(self):
-		"""Enforce the Front/Back/Sleeve sublimation matrix:
-
-		Sublimation Type          Front         Back          Sleeves
-		------------------------  ------------  ------------  ------------
-		None                      free*         free*         free*
-		Front Sublimation         Sublimation   free*         free*
-		Back Sublimation          free*         Sublimation   free*
-		Front & Back Sublimation  Sublimation   Sublimation   free*
-		Full Sublimation          Sublimation   Sublimation   Sublimation
-
-		"free*" = Solid Color / Logo / A4 (never Sublimation - only a
-		locked zone may be Sublimation). Solid Color on any zone makes
-		that zone's colour field mandatory.
-		"""
 		locked = LOCKED_ZONES.get(self.sublimation_type, [])
 
 		for zone in ZONE_FIELDS:
 			value = self.get(zone)
 
 			if zone in locked:
-				# Force the locked value server-side too - never trust the
-				# client to have kept it in sync.
 				self.set(zone, "Sublimation")
 				continue
 
@@ -148,10 +113,8 @@ class P3OrderBook(Document):
 
 	def refresh_sales_order_status(self):
 		if self.sales_order and frappe.db.exists("Sales Order", self.sales_order):
-			self.sales_order_status = frappe.db.get_value("Sales Order", self.sales_order, "docstatus")
-			self.sales_order_status = {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(
-				self.sales_order_status, ""
-			)
+			status = frappe.db.get_value("Sales Order", self.sales_order, "docstatus")
+			self.sales_order_status = {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(status, "")
 
 	def create_linked_sales_order(self):
 		so = frappe.get_doc(
@@ -176,10 +139,6 @@ class P3OrderBook(Document):
 
 	@frappe.whitelist()
 	def create_sales_order_from_book(self):
-		"""Called by the 'Create Sales Order' button. Submits the Sales
-		Order that was already created (as a draft) when this document was
-		submitted.
-		"""
 		if self.docstatus != 1:
 			frappe.throw(_("Submit this P3 Order Book first."))
 

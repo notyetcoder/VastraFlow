@@ -6,8 +6,6 @@ const APPAREL_SLEEVES = [
 ];
 
 // Front/Back/Sleeve locking rules driven by Sublimation Type.
-// Any zone not listed here stays free but is restricted to
-// Solid Color / Logo / A4 - it can never independently be "Sublimation".
 const SUBLIMATION_LOCK_MAP = {
 	'None': [],
 	'Front Sublimation': ['front_print'],
@@ -17,17 +15,17 @@ const SUBLIMATION_LOCK_MAP = {
 };
 const FREE_ZONE_OPTIONS = ['Solid Color', 'Logo', 'A4'];
 const ZONE_COLOUR_FIELD = { front_print: 'front_colour', back_print: 'back_colour', sleeve_print: 'sleeve_colour' };
-const ZONE_LABEL = { front_print: 'Front', back_print: 'Back', sleeve_print: 'Sleeves' };
 
 frappe.ui.form.on('P3 Order Book', {
 	setup(frm) {
-		frm.set_query('fabric', () => ({ filters: { attribute: 'Fabric' } }));
-		frm.set_query('stitching', () => ({ filters: { attribute: 'Stitching' } }));
+		// Filter Item Attribute Values by parent attribute name (Prevents MySQL Error 1054)
+		frm.set_query('fabric', () => ({ filters: { parent: 'Fabric' } }));
+		frm.set_query('stitching', () => ({ filters: { parent: 'Stitching' } }));
 		['front_colour', 'back_colour', 'sleeve_colour'].forEach(f => {
-			frm.set_query(f, () => ({ filters: { attribute: 'Colour' } }));
+			frm.set_query(f, () => ({ filters: { parent: 'Colour' } }));
 		});
-		// Collar Type is a real Item (with variants + images) per your call -
-		// scoped to whatever Item Group you're using for collar variants.
+		
+		// Collar Type & Product Type Link queries
 		frm.set_query('collar_type', () => ({ filters: { item_group: 'Collar Types' } }));
 		frm.set_query('product_type', () => ({ filters: { item_group: 'Products' } }));
 	},
@@ -49,9 +47,6 @@ frappe.ui.form.on('P3 Order Book', {
 			frm.set_value('contact_display', '');
 			return;
 		}
-		// Reuses ERPNext's own party-details endpoint - the exact same one
-		// Sales Order itself calls - rather than reinventing address/contact
-		// fetch logic.
 		frappe.call({
 			method: 'erpnext.accounts.party.get_party_details',
 			args: { party: frm.doc.customer, party_type: 'Customer' },
@@ -129,8 +124,6 @@ frappe.ui.form.on('P3 Order Book', {
 			$wrapper.html(`<span style="font-size:11px; color:#8d99a6;">No artwork attached.</span>`);
 			return;
 		}
-		// Small thumbnail by default; hover to see it full size - pure CSS,
-		// no click/modal needed.
 		$wrapper.html(`
 			<div class="p3o-artwork-hover" style="position:relative; display:inline-block;">
 				<img src="${frappe.utils.escape_html(frm.doc.artwork_file)}"
@@ -171,8 +164,6 @@ frappe.ui.form.on('P3 Order Book', {
 	before_submit(frm) {
 		let any_sublimation = ['front_print', 'back_print', 'sleeve_print'].some(f => frm.doc[f] === 'Sublimation');
 		if (any_sublimation && !frm.doc.artwork_file) {
-			// Returning a rejected promise here blocks the submit until the
-			// user explicitly confirms - asked once, as requested.
 			return new Promise((resolve, reject) => {
 				frappe.confirm(
 					__('This order uses sublimation but no artwork file is attached. Submit anyway?'),
@@ -183,8 +174,6 @@ frappe.ui.form.on('P3 Order Book', {
 		}
 	},
 
-	// The size_matrix Table field (hidden) is the real data store; the
-	// visual grid below renders it and keeps it in sync on every change.
 	render_matrix_grid(frm) {
 		let existing = {};
 		(frm.doc.size_matrix || []).forEach(row => { existing[row.size_code] = row; });
