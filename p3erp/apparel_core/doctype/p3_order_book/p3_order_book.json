@@ -165,7 +165,7 @@
   {
    "fieldname": "stitching",
    "fieldtype": "Link",
-   "label": "Stitching",
+   "label": "Stitching Type",
    "options": "Item Attribute Value"
   },
   {
