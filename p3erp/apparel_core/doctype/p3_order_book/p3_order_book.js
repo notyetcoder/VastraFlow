@@ -1,47 +1,79 @@
-const APPAREL_SIZES = [22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52];
+const APPAREL_SIZES = [22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54];
 const APPAREL_SLEEVES = [
 	{ code: 'H-S', label: 'Half Sleeve', fieldname: 'hs_qty' },
 	{ code: 'F-S', label: 'Full Sleeve', fieldname: 'fs_qty' },
 	{ code: 'S-L', label: 'Sleeveless', fieldname: 'sl_qty' }
 ];
 
-// Front/Back/Sleeve locking rules driven by Sublimation Type.
-// Any zone not listed here stays free but is restricted to
-// Solid Color / Logo / A4 - it can never independently be "Sublimation".
-const SUBLIMATION_LOCK_MAP = {
-	'None': [],
-	'Front Sublimation': ['front_print'],
-	'Back Sublimation': ['back_print'],
-	'Front & Back Sublimation': ['front_print', 'back_print'],
-	'Full Sublimation': ['front_print', 'back_print', 'sleeve_print']
-};
 const FREE_ZONE_OPTIONS = ['Solid Color', 'Logo', 'A4'];
 const ZONE_COLOUR_FIELD = { front_print: 'front_colour', back_print: 'back_colour', sleeve_print: 'sleeve_colour' };
-const ZONE_LABEL = { front_print: 'Front', back_print: 'Back', sleeve_print: 'Sleeves' };
+
+// Keyword-matched, same logic as the server-side _locked_zones_for() in
+// p3_order_book.py - deliberately NOT an exact-string map, since real
+// Sublimation Type values in ERPNext have inconsistent casing/spacing
+// ("Full sublimation" vs "Front & Back sublimation" etc.).
+function locked_zones_for(sublimation_type) {
+	let value = (sublimation_type || '').toLowerCase();
+	if (value.includes('full')) return ['front_print', 'back_print', 'sleeve_print'];
+	if (value.includes('front') && value.includes('back')) return ['front_print', 'back_print'];
+	if (value.includes('front')) return ['front_print'];
+	if (value.includes('back')) return ['back_print'];
+	return [];
+}
+
+// Dynamic-Select fields populated live from ERPNext's own Item Attribute
+// data (never hardcoded, never linked directly to Item Attribute Value's
+// internal hash IDs - see apparel_core/api.py docstring for why).
+const DYNAMIC_SELECT_FIELDS = {
+	stitching: 'Stitching',
+	front_colour: 'Colour',
+	back_colour: 'Colour',
+	sleeve_colour: 'Colour',
+	sublimation_type: 'Sublimation'
+};
 
 frappe.ui.form.on('P3 Order Book', {
 	setup(frm) {
-		// Item Attribute Value is a CHILD TABLE of Item Attribute - it has no
-		// "attribute" column. The column that actually links a value back to
-		// its owning attribute is Frappe's standard child-table column
-		// "parent" (holding the Item Attribute's name, e.g. "Fabric").
-		frm.set_query('fabric', () => ({ filters: { parent: 'Fabric' } }));
-		frm.set_query('stitching', () => ({ filters: { parent: 'Stitching' } }));
-		['front_colour', 'back_colour', 'sleeve_colour'].forEach(f => {
-			frm.set_query(f, () => ({ filters: { parent: 'Colour' } }));
-		});
-		// Collar Type variants live under the parent template Item "Collar" -
-		// filtering by variant_of is the correct/robust way to pull all of
-		// them, regardless of what Item Group each variant ends up in.
-		frm.set_query('collar_type', () => ({ filters: { variant_of: 'Collar' } }));
-		frm.set_query('product_type', () => ({ filters: { item_group: 'Products' } }));
+		// "Most used first" ranked Link queries - real usage-frequency
+		// ranking via apparel_core/api.py, not just alphabetical.
+		frm.set_query('product_type', () => ({
+			query: 'p3erp.apparel_core.api.item_link_query',
+			filters: { item_group: 'Products', _usage_fieldname: 'product_type' }
+		}));
+		frm.set_query('fabric', () => ({
+			query: 'p3erp.apparel_core.api.item_link_query',
+			filters: { variant_of: 'FB', _usage_fieldname: 'fabric' }
+		}));
+		frm.set_query('collar_type', () => ({
+			query: 'p3erp.apparel_core.api.item_link_query',
+			filters: { variant_of: 'COLL', _usage_fieldname: 'collar_type' }
+		}));
+	},
 
+	onload(frm) {
+		frm.trigger('load_dynamic_select_options');
+	},
+
+	load_dynamic_select_options(frm) {
+		Object.entries(DYNAMIC_SELECT_FIELDS).forEach(([fieldname, attribute]) => {
+			frappe.call({
+				method: 'p3erp.apparel_core.api.get_attribute_values',
+				args: { attribute },
+				callback(r) {
+					let values = r.message || [];
+					let blank_ok = ['front_colour', 'back_colour', 'sleeve_colour', 'stitching'].includes(fieldname);
+					frm.set_df_property(fieldname, 'options', (blank_ok ? [''] : []).concat(values).join('\n'));
+					frm.refresh_field(fieldname);
+				}
+			});
+		});
 	},
 
 	refresh(frm) {
 		frm.trigger('render_matrix_grid');
 		frm.trigger('render_artwork_preview');
 		frm.trigger('render_collar_preview');
+		frm.trigger('render_fabric_preview');
 		frm.trigger('apply_sublimation_lock');
 		frm.trigger('toggle_colour_fields');
 		frm.trigger('render_create_so_button');
@@ -56,8 +88,7 @@ frappe.ui.form.on('P3 Order Book', {
 			return;
 		}
 		// Reuses ERPNext's own party-details endpoint - the exact same one
-		// Sales Order itself calls - rather than reinventing address/contact
-		// fetch logic.
+		// Sales Order itself calls.
 		frappe.call({
 			method: 'erpnext.accounts.party.get_party_details',
 			args: { party: frm.doc.customer, party_type: 'Customer' },
@@ -71,23 +102,50 @@ frappe.ui.form.on('P3 Order Book', {
 		});
 	},
 
-	collar_type(frm) {
-		frm.trigger('render_collar_preview');
+	fabric(frm) { frm.trigger('render_fabric_preview'); },
+	collar_type(frm) { frm.trigger('render_collar_preview'); },
+
+	render_fabric_preview(frm) {
+		frm.trigger('_render_variant_preview', { fieldname: 'fabric', attribute: 'Fabric', wrapper: 'fabric_preview' });
 	},
 
 	render_collar_preview(frm) {
-		let $wrapper = frm.fields_dict.collar_preview.$wrapper;
-		if (!frm.doc.collar_type) {
+		frm.trigger('_render_variant_preview', { fieldname: 'collar_type', attribute: 'Collar Type', wrapper: 'collar_preview' });
+	},
+
+	_render_variant_preview(frm, { fieldname, attribute, wrapper }) {
+		let $wrapper = frm.fields_dict[wrapper].$wrapper;
+		let item_code = frm.doc[fieldname];
+
+		if (!item_code) {
 			$wrapper.html('');
 			return;
 		}
-		frappe.db.get_value('Item', frm.doc.collar_type, 'image').then(r => {
+
+		// Image straight off the Item.
+		frappe.db.get_value('Item', item_code, 'image').then(r => {
 			let image = r.message && r.message.image;
-			$wrapper.html(
-				image
-					? `<img src="${frappe.utils.escape_html(image)}" style="max-height:120px; border:1px solid var(--border-color, #d1d8dd); border-radius:6px; padding:4px; margin-top:4px;" />`
-					: `<span style="font-size:11px; color:#8d99a6;">No image uploaded for this collar variant yet.</span>`
-			);
+			let img_html = image
+				? `<img src="${frappe.utils.escape_html(image)}" style="max-height:120px; border:1px solid var(--border-color, #d1d8dd); border-radius:6px; padding:4px; margin-top:4px;" />`
+				: `<span style="font-size:11px; color:#8d99a6;">No image uploaded for this variant yet.</span>`;
+			$wrapper.html(img_html + '<div class="variant-label" style="font-size:11px; color:#6b7580; margin-top:4px;">Resolving name&hellip;</div>');
+
+			// Real human name straight off the Item's own variant
+			// attributes - not item_name/item_code, which may just be a
+			// short internal code like "Fabric-CM" rather than "Soft
+			// Micro". Same lookup logic as resolve_variant_labels() on
+			// the server, done live here for immediate feedback before
+			// the doc is even saved.
+			frappe.db.get_list('Item Variant Attribute', {
+				filters: { parent: item_code, attribute: attribute },
+				fields: ['attribute_value'],
+				limit: 1
+			}).then(rows => {
+				let label = rows && rows[0] && rows[0].attribute_value;
+				$wrapper.find('.variant-label').html(
+					label ? `Selected: <strong>${frappe.utils.escape_html(label)}</strong>` : ''
+				);
+			});
 		});
 	},
 
@@ -96,7 +154,7 @@ frappe.ui.form.on('P3 Order Book', {
 	},
 
 	apply_sublimation_lock(frm) {
-		let locked = SUBLIMATION_LOCK_MAP[frm.doc.sublimation_type] || [];
+		let locked = locked_zones_for(frm.doc.sublimation_type);
 
 		['front_print', 'back_print', 'sleeve_print'].forEach(zone => {
 			if (locked.includes(zone)) {
@@ -130,13 +188,14 @@ frappe.ui.form.on('P3 Order Book', {
 	},
 
 	render_artwork_preview(frm) {
+		// Hover-to-zoom lives ONLY here, on the live data-entry form. Print
+		// preview and the final print show the artwork as a full-size
+		// image directly - see production_job_card.html.
 		let $wrapper = frm.fields_dict.artwork_preview_html.$wrapper;
 		if (!frm.doc.artwork_file) {
 			$wrapper.html(`<span style="font-size:11px; color:#8d99a6;">No artwork attached.</span>`);
 			return;
 		}
-		// Small thumbnail by default; hover to see it full size - pure CSS,
-		// no click/modal needed.
 		$wrapper.html(`
 			<div class="p3o-artwork-hover" style="position:relative; display:inline-block;">
 				<img src="${frappe.utils.escape_html(frm.doc.artwork_file)}"
@@ -177,8 +236,6 @@ frappe.ui.form.on('P3 Order Book', {
 	before_submit(frm) {
 		let any_sublimation = ['front_print', 'back_print', 'sleeve_print'].some(f => frm.doc[f] === 'Sublimation');
 		if (any_sublimation && !frm.doc.artwork_file) {
-			// Returning a rejected promise here blocks the submit until the
-			// user explicitly confirms - asked once, as requested.
 			return new Promise((resolve, reject) => {
 				frappe.confirm(
 					__('This order uses sublimation but no artwork file is attached. Submit anyway?'),

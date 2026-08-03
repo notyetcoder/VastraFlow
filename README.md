@@ -64,13 +64,37 @@ zone's colour field mandatory.
 
 ## Setup notes before go-live
 
-- **Collar Type** is a Link to `Item`, filtered to Item Group
-  `"Collar Types"` — create that Item Group and one Item variant per
-  collar style, each with its `image` field set, so the collar preview on
+- **Collar Type** is a Link to `Item`, filtered by `variant_of = 'COLL'`
+  (the parent template Item's actual **Item Code**, not its display name
+  "Collar" — this distinction is exactly what caused an earlier empty
+  dropdown). Set each variant's `image` field so the collar preview on
   the form has something to show.
+- **Fabric** works the same way, filtered by `variant_of = 'FB'`.
 - **Product Type** is filtered to Item Group `"Products"`.
+- **Stitching Type / Colour (x3) / Sublimation Type** are populated live
+  from their matching ERPNext `Item Attribute` records (`Stitching`,
+  `Colour`, `Sublimation`) at form load — no hardcoded lists, no need to
+  redeploy code to add a new value. Add/edit values directly in ERPNext.
+- **Pricing — `P3 Item Price List`**: one active rate per Product Type.
+  Deliberately its own DocType, never shown on the P3 Order Book form
+  itself, so order-taking staff never see or pick a price — it's a
+  centrally managed list. **Submit is blocked** on any P3 Order Book
+  whose Product Type has no active price entry. The rate is pulled from
+  here and applied to the auto-created Sales Order's item line.
 - `AUTO_CREATE` needs at least one seed BOM per product line the first
   time it's used for that item.
+
+### Why "same item, different price" isn't actually a conflict
+
+Each P3 Order Book creates its own dedicated Sales Order (never merges
+into an existing one), so two different specs for the same base Item
+(e.g. two "Hoodies" orders at different rates) just become two separate
+Sales Orders — no collision. Each Sales Order item row also gets an
+auto-generated `description` summarizing the spec (fabric/collar/
+sublimation), which keeps things distinguishable even if you later
+choose to consolidate multiple P3 Orders into one combined Sales Order —
+ERPNext doesn't block duplicate `item_code` rows within one Sales Order
+natively, so that path is open if you want it.
 
 ## Roles
 

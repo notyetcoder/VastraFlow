@@ -20,7 +20,10 @@
   "sales_order_status",
   "section_break_garment",
   "fabric",
+  "fabric_label",
+  "fabric_preview",
   "collar_type",
+  "collar_label",
   "collar_preview",
   "column_break_garment",
   "stitching",
@@ -144,14 +147,33 @@
    "fieldname": "fabric",
    "fieldtype": "Link",
    "label": "Fabric",
-   "options": "Item Attribute Value",
+   "options": "Item",
    "reqd": 1
+  },
+  {
+   "fieldname": "fabric_label",
+   "fieldtype": "Data",
+   "label": "Fabric (resolved)",
+   "read_only": 1,
+   "depends_on": "eval:doc.fabric_label"
+  },
+  {
+   "fieldname": "fabric_preview",
+   "fieldtype": "HTML",
+   "label": "Fabric Preview"
   },
   {
    "fieldname": "collar_type",
    "fieldtype": "Link",
    "label": "Collar Type",
    "options": "Item"
+  },
+  {
+   "fieldname": "collar_label",
+   "fieldtype": "Data",
+   "label": "Collar Type (resolved)",
+   "read_only": 1,
+   "depends_on": "eval:doc.collar_label"
   },
   {
    "fieldname": "collar_preview",
@@ -164,9 +186,9 @@
   },
   {
    "fieldname": "stitching",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
    "label": "Stitching Type",
-   "options": "Item Attribute Value"
+   "options": "\nSingle Stitching\nDouble Stitching"
   },
   {
    "fieldname": "button_qty",
@@ -183,7 +205,7 @@
    "fieldname": "sublimation_type",
    "fieldtype": "Select",
    "label": "Sublimation Type",
-   "options": "None\nFront Sublimation\nBack Sublimation\nFront & Back Sublimation\nFull Sublimation",
+   "options": "None\nFront Sublimation\nBack Sublimation\nFront & Back sublimation\nFull sublimation",
    "reqd": 1
   },
   {
@@ -198,9 +220,9 @@
   },
   {
    "fieldname": "front_colour",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
    "label": "Front Colour",
-   "options": "Item Attribute Value"
+   "options": "\nRed\nGreen\nBlue\nBlack\nWhite"
   },
   {
    "fieldname": "column_break_sub_2",
@@ -214,9 +236,9 @@
   },
   {
    "fieldname": "back_colour",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
    "label": "Back Colour",
-   "options": "Item Attribute Value"
+   "options": "\nRed\nGreen\nBlue\nBlack\nWhite"
   },
   {
    "fieldname": "column_break_sub_3",
@@ -230,9 +252,9 @@
   },
   {
    "fieldname": "sleeve_colour",
-   "fieldtype": "Link",
+   "fieldtype": "Select",
    "label": "Sleeve Colour",
-   "options": "Item Attribute Value"
+   "options": "\nRed\nGreen\nBlue\nBlack\nWhite"
   },
   {
    "fieldname": "artwork_file",
