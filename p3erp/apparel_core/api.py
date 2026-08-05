@@ -89,6 +89,14 @@ def item_link_query(doctype, txt, searchfield, start, page_len, filters):
 	"""Generic 'most used first' query for Link fields pointing at Item,
 	scoped by whatever base filter is passed in (item_group or
 	variant_of). Used for Product Type, Fabric, and Collar Type.
+
+	For variant_of-scoped queries (Fabric, Collar Type), the second
+	column shown in the dropdown is the resolved Item Variant Attribute
+	value (e.g. "Soft Micro", "Round Neck") instead of item_name - this
+	is what actually lets someone pick the right variant by its real
+	name while searching, without needing item_name/item_code to be
+	cleaned up in ERPNext first. Pass `_attribute_name` alongside
+	`variant_of` in filters to enable this (see p3_order_book.js setup()).
 	"""
 	import json as _json
 
@@ -97,6 +105,7 @@ def item_link_query(doctype, txt, searchfield, start, page_len, filters):
 	filters = filters or {}
 
 	usage_fieldname = filters.pop("_usage_fieldname", None)
+	attribute_name = filters.pop("_attribute_name", None)
 
 	conditions = ["i.name LIKE %(txt)s"]
 	values = {"txt": f"%{txt}%", "start": start, "page_len": page_len}
@@ -122,12 +131,27 @@ def item_link_query(doctype, txt, searchfield, start, page_len, filters):
 		"""
 		usage_order = "COALESCE(u.usage_count, 0)"
 
+	# Show the real variant attribute value (e.g. "Soft Micro") as the
+	# second column when we know which attribute to look for; otherwise
+	# fall back to item_name (correct as-is for Product Type, which isn't
+	# a variant).
+	label_join = ""
+	label_column = "i.item_name"
+	if attribute_name:
+		label_join = """
+			LEFT JOIN `tabItem Variant Attribute` iva
+				ON iva.parent = i.name AND iva.attribute = %(attribute_name)s
+		"""
+		values["attribute_name"] = attribute_name
+		label_column = "COALESCE(iva.attribute_value, i.item_name)"
+
 	query = f"""
-		SELECT i.name, i.item_name
+		SELECT i.name, {label_column} AS label
 		FROM `tabItem` i
 		{usage_join}
+		{label_join}
 		WHERE {' AND '.join(conditions)}
-		ORDER BY {usage_order} DESC, i.item_name ASC
+		ORDER BY {usage_order} DESC, label ASC
 		LIMIT %(start)s, %(page_len)s
 	"""
 	return frappe.db.sql(query, values)

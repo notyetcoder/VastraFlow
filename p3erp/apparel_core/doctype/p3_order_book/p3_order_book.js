@@ -55,11 +55,11 @@ frappe.ui.form.on('P3 Order Book', {
 		}));
 		frm.set_query('fabric', () => ({
 			query: 'p3erp.apparel_core.api.item_link_query',
-			filters: { variant_of: 'FB', _usage_fieldname: 'fabric' }
+			filters: { variant_of: 'FB', _usage_fieldname: 'fabric', _attribute_name: 'Fabric' }
 		}));
 		frm.set_query('collar_type', () => ({
 			query: 'p3erp.apparel_core.api.item_link_query',
-			filters: { variant_of: 'COLL', _usage_fieldname: 'collar_type' }
+			filters: { variant_of: 'COLL', _usage_fieldname: 'collar_type', _attribute_name: 'Collar Type' }
 		}));
 	},
 
@@ -284,14 +284,50 @@ frappe.ui.form.on('P3 Order Book', {
 	before_submit(frm) {
 		let any_sublimation = ['front_print', 'back_print', 'sleeve_print'].some(f => frm.doc[f] === 'Sublimation');
 		if (any_sublimation && !frm.doc.artwork_file) {
-			return new Promise((resolve, reject) => {
+			let artwork_ok = new Promise((resolve, reject) => {
 				frappe.confirm(
 					__('This order uses sublimation but no artwork file is attached. Submit anyway?'),
 					() => resolve(),
 					() => reject()
 				);
 			});
+			return artwork_ok.then(() => frm.trigger('check_pricing_before_submit'));
 		}
+		return frm.trigger('check_pricing_before_submit');
+	},
+
+	// Only relevant for Account Managers - everyone else just lets the
+	// server's own before_submit throw its normal blocking error, which
+	// already lists every missing combination clearly. This is purely a
+	// client-side convenience so an Account Manager doesn't have to fail
+	// a submit, go find the Pricing Rule list, and come back - it opens
+	// Frappe's own standard "New" quick-entry dialog, prefilled, exactly
+	// the way Frappe itself prompts for a missing dependency elsewhere.
+	check_pricing_before_submit(frm) {
+		if (!frappe.user_roles.includes('Account Manager')) {
+			return Promise.resolve();
+		}
+
+		return frm.call('get_missing_price_prefill').then(r => {
+			let prefill = r.message;
+			if (!prefill) {
+				return; // nothing missing - let submit proceed normally
+			}
+
+			return new Promise((resolve, reject) => {
+				frappe.msgprint({
+					title: __('Pricing needed'),
+					message: __('No Pricing Rule matches {0}, Size {1} for this spec. Add one now, then click Submit again.', [prefill.sleeve_type, prefill.size]),
+					indicator: 'orange'
+				});
+				let new_rule = frappe.new_doc('P3 Pricing Rule', prefill);
+				// frappe.new_doc opens the standard quick-entry/full form -
+				// whether the user actually saves it or cancels, either way
+				// we stop THIS submit attempt here; they click Submit again
+				// once pricing exists.
+				reject();
+			});
+		});
 	},
 
 	// The size_matrix Table field (hidden) is the real data store; the

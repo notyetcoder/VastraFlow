@@ -1,0 +1,221 @@
+{
+ "actions": [],
+ "creation": "2026-08-05 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule_name",
+  "priority",
+  "is_active",
+  "section_break_match",
+  "product_type",
+  "product_type_mandatory",
+  "fabric",
+  "fabric_mandatory",
+  "collar_type",
+  "collar_type_mandatory",
+  "sleeve_type",
+  "sleeve_type_mandatory",
+  "size",
+  "size_mandatory",
+  "stitching",
+  "stitching_mandatory",
+  "sublimation_type",
+  "sublimation_type_mandatory",
+  "customer",
+  "customer_mandatory",
+  "section_break_price",
+  "rate",
+  "currency"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rule Name",
+   "description": "Optional label for your own reference, e.g. \"Micro + Front Sublimation - all sizes\"."
+  },
+  {
+   "default": "0",
+   "description": "When more than one active rule matches an order, the highest Priority wins. Ties are broken by whichever rule was modified most recently.",
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Priority"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "section_break_match",
+   "fieldtype": "Section Break",
+   "label": "Matching Parameters — tick \u201cMandatory\u201d for whichever fields this rule should require. Unticked fields are ignored entirely when matching an order."
+  },
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "label": "Product Type",
+   "options": "Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "product_type_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "fabric",
+   "fieldtype": "Link",
+   "label": "Fabric",
+   "options": "Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "fabric_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "collar_type",
+   "fieldtype": "Link",
+   "label": "Collar Type",
+   "options": "Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "collar_type_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "sleeve_type",
+   "fieldtype": "Select",
+   "label": "Sleeve Type",
+   "options": "\nHalf Sleeve\nFull Sleeve\nSleeveless"
+  },
+  {
+   "default": "0",
+   "fieldname": "sleeve_type_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Select",
+   "label": "Size",
+   "options": "\n22\n24\n26\n28\n30\n32\n34\n36\n38\n40\n42\n44\n46\n48\n50\n52\n54"
+  },
+  {
+   "default": "0",
+   "fieldname": "size_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "stitching",
+   "fieldtype": "Select",
+   "label": "Stitching Type",
+   "options": "\nSingle Stitching\nDouble Stitching"
+  },
+  {
+   "default": "0",
+   "fieldname": "stitching_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "sublimation_type",
+   "fieldtype": "Select",
+   "label": "Sublimation Type",
+   "options": "\nNone\nFront Sublimation\nBack Sublimation\nFront & Back sublimation\nFull sublimation"
+  },
+  {
+   "default": "0",
+   "fieldname": "sublimation_type_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "default": "0",
+   "fieldname": "customer_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory"
+  },
+  {
+   "fieldname": "section_break_price",
+   "fieldtype": "Section Break",
+   "label": "Price"
+  },
+  {
+   "default": "0",
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate (per Pc)",
+   "options": "currency",
+   "reqd": 1
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "module": "Apparel Core",
+ "name": "P3 Pricing Rule",
+ "naming_rule": "Random",
+ "autoname": "hash",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Account Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Manufacturing Manager",
+   "share": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales User",
+   "share": 1
+  }
+ ]
+}

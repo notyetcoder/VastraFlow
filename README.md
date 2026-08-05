@@ -7,7 +7,7 @@ VastraFlow ERP
            |
            ├── Order Book         (P3 Order Book DocType)
            ├── Production Engine  (BOM Decision Engine + Work Order routing)
-           ├── Pricing Engine     (P3 Base Price / Customer Override / Surcharge)
+           ├── Pricing Engine     (P3 Pricing Rule - configurable, priority-based)
            └── Job Card System    (Production Job Card print format)
 ```
 
@@ -45,9 +45,9 @@ whatever your site's actual current format is:
 
 1. Desk home → **Edit** (top right) → **New Workspace**
 2. Name it **"GarmentOS"**, pick an icon
-3. Add four **Shortcut** blocks, one per module: P3 Order Book, P3 Base
-   Price, P3 Surcharge, Production Job Card (or whatever subset you want
-   pinned)
+3. Add four **Shortcut** blocks, one per module: P3 Order Book, P3
+   Pricing Rule, Production Job Card, Sales Order (or whatever subset you
+   want pinned)
 4. Save
 
 ## How the order → Sales Order → Work Order flow works
@@ -71,25 +71,37 @@ built on top.
 
 ## Pricing Engine
 
-Decomposed into two layers specifically to avoid a combinatorial
-explosion (a flat table keyed on all 7 spec dimensions would need upward
-of 128,000 rows):
+One unified DocType, **P3 Pricing Rule**, replacing an earlier two-layer
+design. Each rule can independently decide *which* of eight possible
+parameters actually matter to it — Product Type, Fabric, Collar Type,
+Sleeve Type, Size, Stitching Type, Sublimation Type, Customer — via a
+`<field>_mandatory` checkbox per parameter. A rule with only Fabric and
+Sublimation Type ticked matches *any* order with that combination,
+regardless of sleeve, size, or anything else.
 
-- **P3 Base Price** — keyed on Product Type + Fabric + Sleeve Type + Size
-  only (the dimensions that genuinely scale multiplicatively with cost).
-  Exact match required — no fallback, no partial matching. Missing a
-  combination **blocks submit**.
-- **P3 Base Price Customer Override** — same key + Customer, checked
-  *first*, before the generic list.
-- **P3 Surcharge** — additive add-on for Collar Type / Stitching Type /
-  Sublimation Type, keyed on Product Type + which dimension + the exact
-  spec value (e.g. "Round Neck"). Missing a surcharge is **not** an
-  error — it defaults to ₹0, since most collar/stitching/sublimation
-  choices don't actually change cost.
+**Matching**: exact-match only on whichever fields are ticked mandatory —
+untuned/unticked fields are never checked, not even against whatever
+value happens to be sitting in them. Multiple active rules can
+legitimately overlap and match the same order line at once — that's
+expected, not an error. **Priority** (an integer, admin-set) decides
+which one wins; ties go to whichever rule was modified most recently.
+This mirrors ERPNext's own built-in Pricing Rule engine on purpose.
 
-Final rate per Sales Order line = Base Price + sum of all matching
-surcharges. Every matrix cell always becomes its own Sales Order line,
-even when two cells resolve to an identical final rate.
+Every matrix cell always becomes its own separate Sales Order line, even
+when two cells resolve to an identical rate.
+
+**Missing pricing at submit time**: submit is blocked, listing every
+unmatched (Sleeve Type, Size) combination at once. Users with the
+**Account Manager** role get an additional convenience: Frappe's own
+standard "New" quick-entry dialog opens automatically, prefilled from the
+order's actual spec (all eight parameters pre-ticked Mandatory as the
+safest starting point — uncheck whichever shouldn't matter before
+saving). Everyone else just sees the blocking message and needs to ask an
+Account Manager to add the rule. Note: this currently surfaces and fixes
+one missing combination at a time — if an order has several unpriced
+combinations, expect to Submit → add pricing → Submit again, repeating
+until all are covered, rather than a single dialog resolving everything
+in one pass.
 
 ## BOM routing strategies
 
@@ -122,17 +134,21 @@ inconsistencies in the ERPNext attribute data.
   from their matching ERPNext `Item Attribute` records at form load — no
   hardcoded lists.
 - **Pricing must be populated before any order can be submitted** —
-  populate P3 Base Price for every real Fabric+Sleeve+Size combination
-  you actually sell (not every theoretical one), and P3 Surcharge for any
-  Collar/Stitching/Sublimation choice that genuinely changes cost.
+  create P3 Pricing Rule entries covering whatever combinations you
+  actually sell (not every theoretical one). Broad rules (few mandatory
+  fields) cover more ground with less setup; narrow rules (many
+  mandatory fields, higher Priority) override them for specific cases.
 - `AUTO_CREATE` needs at least one seed BOM per product line the first
   time it's used for that item.
 
 ## Roles
 
 - **System Manager** — full access everywhere.
-- **Manufacturing Manager** — create/write/submit/amend on P3 Order Book;
-  full create/write/delete on pricing DocTypes.
+- **Account Manager** — the *only* role (besides System Manager) that
+  can create or edit P3 Pricing Rule. Everyone else, including
+  Manufacturing Manager, has read-only access to pricing — price stays
+  centrally controlled, never something order-taking staff pick.
+- **Manufacturing Manager** — create/write/submit/amend on P3 Order Book.
 - **Sales User** — create/write/submit/amend on P3 Order Book (this
   document *is* the sales-order-creation flow for these users); **read
   only** on all pricing DocTypes — price stays centrally controlled, never

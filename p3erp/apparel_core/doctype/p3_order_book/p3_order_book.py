@@ -11,19 +11,17 @@ ZONE_COLOUR_FIELDS = {
 ZONE_LABELS = {"front_print": "Front", "back_print": "Back", "sleeve_print": "Sleeves"}
 
 # Maps the child table's per-size quantity columns to the Sleeve Type label
-# used everywhere else (P3 Base Price, P3 Surcharge matching, Sales Order
-# line descriptions).
+# used everywhere else (P3 Pricing Rule matching, Sales Order line
+# descriptions).
 MATRIX_SLEEVE_COLUMNS = {
 	"hs_qty": "Half Sleeve",
 	"fs_qty": "Full Sleeve",
 	"sl_qty": "Sleeveless",
 }
 
-SURCHARGE_DIMENSIONS = [
-	# (P3O fieldname to read the resolved value from, "Applies To" value in P3 Surcharge)
-	("collar_label", "Collar Type"),
-	("stitching", "Stitching Type"),
-	("sublimation_type", "Sublimation Type"),
+PRICING_RULE_MATCH_FIELDS = [
+	"product_type", "fabric", "collar_type", "sleeve_type",
+	"size", "stitching", "sublimation_type", "customer",
 ]
 
 
@@ -60,13 +58,15 @@ class P3OrderBook(Document):
 	Lifecycle:
 	  Save    -> Draft, docstatus 0. No Sales Order touched.
 	  Submit  -> docstatus 1. Every non-empty matrix cell (Size x Sleeve
-	             Type) must resolve to an active P3 Base Price (blocked,
-	             with every missing combination listed at once, otherwise).
+	             Type) must resolve to a matching P3 Pricing Rule (blocked,
+	             with every missing combination listed at once, otherwise -
+	             unless the current user has the Account Manager role, in
+	             which case a quick-entry dialog lets them define the
+	             missing rule inline; see create_pricing_rule_from_book()).
 	             Creates a real (draft) Sales Order with ONE line item PER
 	             matrix cell - never merged, even if two cells share a
-	             rate - each priced as base rate + any matching surcharges,
-	             links it back via `sales_order`, then routes to the BOM
-	             engine to create a Work Order against that real Sales
+	             rate - links it back via `sales_order`, then routes to the
+	             BOM engine to create a Work Order against that real Sales
 	             Order (at the whole-order total_qty level - the BOM engine
 	             has no awareness of per-line pricing granularity).
 	  "Create Sales Order" button (create_sales_order_from_book) -> submits
@@ -76,8 +76,8 @@ class P3OrderBook(Document):
 	             built on top of it.
 
 	Price is deliberately never a field on this DocType or shown anywhere
-	on this form - see P3BasePrice / P3Surcharge for why pricing lives in
-	its own dedicated, management-controlled DocTypes instead.
+	on this form - see P3PricingRule for why pricing lives in its own
+	dedicated, Account-Manager-controlled DocType instead.
 	"""
 
 	def validate(self):
@@ -92,23 +92,19 @@ class P3OrderBook(Document):
 		if not frappe.db.exists("Item", self.product_type):
 			frappe.throw(_("Product Type {0} does not exist as an Item.").format(self.product_type))
 
-		# Validate every cell has a resolvable base price BEFORE attempting
-		# to build the Sales Order, and report every missing combination in
-		# one message rather than making the user fix them one at a time.
-		missing = []
-		for size_code, sleeve_type, qty in self.iter_matrix_cells():
-			try:
-				self.get_base_rate(size_code, sleeve_type)
-			except frappe.ValidationError:
-				missing.append(f"Fabric '{self.fabric_label or self.fabric}' + {sleeve_type} + Size {size_code}")
-
+		missing = self.get_missing_price_cells()
 		if missing:
 			frappe.throw(
 				_(
-					"Cannot submit - no active Base Price found for the following combination(s):"
-					"<br><br>{0}<br><br>Add them in <b>P3 Base Price</b> (or a customer-specific "
-					"entry in <b>P3 Base Price Customer Override</b>) before submitting."
-				).format("<br>".join(missing))
+					"Cannot submit - no matching Pricing Rule found for the following combination(s):"
+					"<br><br>{0}<br><br>{1}"
+				).format(
+					"<br>".join(missing),
+					_("Ask an Account Manager to add a Pricing Rule for this, or use the "
+					  "\"Add Pricing\" option on this order if you have that role.")
+					if "Account Manager" not in frappe.get_roles()
+					else _("Use the \"Add Pricing\" button on this order to define it now."),
+				)
 			)
 
 	def on_submit(self):
@@ -253,72 +249,74 @@ class P3OrderBook(Document):
 
 	# -- pricing --------------------------------------------------------
 
-	def get_base_rate(self, size_code, sleeve_type):
-		"""Exact-match lookup only - no fallback, no partial matching.
-		Customer-specific override list is checked first; the generic list
-		second. Throws if neither has this exact combination.
+	def _cell_values(self, size_code, sleeve_type):
+		"""The order's actual value for each of the 8 possible pricing
+		match parameters, for a specific matrix cell (size/sleeve vary per
+		cell; everything else is fixed for the whole order).
 		"""
-		override = frappe.db.get_value(
-			"P3 Base Price Customer Override",
-			{
-				"customer": self.customer,
-				"product_type": self.product_type,
-				"fabric": self.fabric,
-				"sleeve_type": sleeve_type,
-				"size": size_code,
-				"is_active": 1,
-			},
-			["rate", "currency"],
-			as_dict=True,
-		)
-		if override:
-			return override
+		return {
+			"product_type": self.product_type,
+			"fabric": self.fabric,
+			"collar_type": self.collar_type,
+			"sleeve_type": sleeve_type,
+			"size": size_code,
+			"stitching": self.stitching,
+			"sublimation_type": self.sublimation_type,
+			"customer": self.customer,
+		}
 
-		generic = frappe.db.get_value(
-			"P3 Base Price",
-			{
-				"product_type": self.product_type,
-				"fabric": self.fabric,
-				"sleeve_type": sleeve_type,
-				"size": size_code,
-				"is_active": 1,
-			},
-			["rate", "currency"],
-			as_dict=True,
-		)
-		if generic:
-			return generic
-
-		frappe.throw(
-			_("No Base Price found for Fabric '{0}' + {1} + Size {2}.").format(
-				self.fabric_label or self.fabric, sleeve_type, size_code
-			)
-		)
-
-	def get_surcharge_total(self):
-		"""Sum of all matching surcharges for this order's fixed spec
-		(Collar/Stitching/Sublimation - these don't vary per matrix cell,
-		they're set once on the P3O header). A missing surcharge row is
-		NOT an error - it's treated as zero, since most spec values don't
-		actually change cost.
+	def find_matching_pricing_rule(self, size_code, sleeve_type):
+		"""Exact match only on whichever fields a given rule has flagged
+		Mandatory - non-mandatory fields on a rule are never checked at
+		all, regardless of what's stored in them. Multiple active rules
+		CAN legitimately match the same cell; highest Priority wins, ties
+		go to the most recently modified rule. Returns None if nothing
+		matches (never guesses, never partially applies a rule).
 		"""
-		total = 0
-		for source_field, applies_to in SURCHARGE_DIMENSIONS:
-			value = self.get(source_field)
-			if not value or (source_field == "sublimation_type" and value == "None"):
-				continue
-			amount = frappe.db.get_value(
-				"P3 Surcharge",
-				{
-					"product_type": self.product_type,
-					"applies_to": applies_to,
-					"spec_value": value,
-					"is_active": 1,
-				},
-				"amount",
-			)
-			total += amount or 0
-		return total
+		cell_values = self._cell_values(size_code, sleeve_type)
+
+		rules = frappe.get_all(
+			"P3 Pricing Rule",
+			filters={"is_active": 1},
+			fields=[
+				"name", "rate", "currency", "priority", "modified",
+				*PRICING_RULE_MATCH_FIELDS,
+				*[f"{f}_mandatory" for f in PRICING_RULE_MATCH_FIELDS],
+			],
+		)
+
+		matches = []
+		for rule in rules:
+			is_match = True
+			for field in PRICING_RULE_MATCH_FIELDS:
+				if rule.get(f"{field}_mandatory"):
+					if rule.get(field) != cell_values.get(field):
+						is_match = False
+						break
+			if is_match:
+				matches.append(rule)
+
+		if not matches:
+			return None
+
+		# Priority descending, ties broken by most-recently-modified first.
+		# Two separate stable sorts (Python's sort is guaranteed stable) -
+		# sort by the tie-breaker first, then by the primary key, so equal
+		# priorities end up ordered by modified date within themselves.
+		matches.sort(key=lambda r: r.modified, reverse=True)
+		matches.sort(key=lambda r: r.priority or 0, reverse=True)
+		return matches[0]
+
+	def get_missing_price_cells(self):
+		"""All (fabric+sleeve+size) combinations in the matrix with no
+		matching Pricing Rule, formatted for the blocking error message.
+		Collected all at once rather than stopping at the first miss.
+		"""
+		missing = []
+		for size_code, sleeve_type, qty in self.iter_matrix_cells():
+			if not self.find_matching_pricing_rule(size_code, sleeve_type):
+				missing.append(f"{sleeve_type}, Size {size_code}")
+		return missing
 
 	def spec_summary(self, size_code=None, sleeve_type=None):
 		"""One-line human summary of the garment spec, used as each Sales
@@ -346,23 +344,25 @@ class P3OrderBook(Document):
 	def create_linked_sales_order(self):
 		"""One Sales Order line item per matrix cell - never merged, even
 		when two cells resolve to an identical rate (confirmed explicitly:
-		every variant gets its own line). Each line's rate = base rate +
-		surcharge total (surcharges are the same for every line on this
-		order, since Collar/Stitching/Sublimation are fixed per order, not
-		per cell).
+		every variant gets its own line).
 		"""
-		surcharge_total = self.get_surcharge_total()
 		items = []
 		currency = None
 
 		for size_code, sleeve_type, qty in self.iter_matrix_cells():
-			base = self.get_base_rate(size_code, sleeve_type)
-			currency = currency or base.currency
+			rule = self.find_matching_pricing_rule(size_code, sleeve_type)
+			if not rule:
+				# Should never happen - before_submit already checked this -
+				# but never silently price something at 0 if it somehow does.
+				frappe.throw(
+					_("No Pricing Rule found for {0}, Size {1}.").format(sleeve_type, size_code)
+				)
+			currency = currency or rule.currency
 			items.append(
 				{
 					"item_code": self.product_type,
 					"qty": qty,
-					"rate": (base.rate or 0) + surcharge_total,
+					"rate": rule.rate or 0,
 					"delivery_date": self.delivery_date,
 					"description": self.spec_summary(size_code, sleeve_type),
 				}
@@ -407,3 +407,29 @@ class P3OrderBook(Document):
 		so.submit()
 		self.db_set("sales_order_status", "Submitted")
 		return {"sales_order": so.name, "status": "submitted"}
+
+	@frappe.whitelist()
+	def get_missing_price_prefill(self):
+		"""Account-Manager-only helper for the "Add Pricing" quick-entry
+		flow: returns the field values for the FIRST unpriced matrix cell,
+		pre-formatted to seed a new P3 Pricing Rule quick-entry dialog. All
+		eight parameters come back pre-ticked Mandatory by default (the
+		narrowest, safest starting point) - the Account Manager can untick
+		whichever ones shouldn't actually matter before saving.
+		"""
+		if "Account Manager" not in frappe.get_roles():
+			frappe.throw(_("Only an Account Manager can add pricing."))
+
+		for size_code, sleeve_type, qty in self.iter_matrix_cells():
+			if not self.find_matching_pricing_rule(size_code, sleeve_type):
+				values = self._cell_values(size_code, sleeve_type)
+				prefill = {k: v for k, v in values.items()}
+				for field in PRICING_RULE_MATCH_FIELDS:
+					prefill[f"{field}_mandatory"] = 1
+				prefill["rule_name"] = (
+					f"{self.product_type_label or self.product_type} - {self.fabric_label or self.fabric} "
+					f"- {sleeve_type} - Size {size_code}"
+				)
+				return prefill
+
+		return None
