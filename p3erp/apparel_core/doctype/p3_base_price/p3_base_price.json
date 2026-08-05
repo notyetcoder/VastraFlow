@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "creation": "2026-08-03 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "product_type",
+  "fabric",
+  "sleeve_type",
+  "size",
+  "column_break_1",
+  "rate",
+  "currency",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fabric",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fabric",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sleeve_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sleeve Type",
+   "options": "Half Sleeve\nFull Sleeve\nSleeveless",
+   "reqd": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Size",
+   "options": "22\n24\n26\n28\n30\n32\n34\n36\n38\n40\n42\n44\n46\n48\n50\n52\n54",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Base Rate (per Pc)",
+   "options": "currency",
+   "reqd": 1
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "module": "Apparel Core",
+ "name": "P3 Base Price",
+ "naming_rule": "Random",
+ "autoname": "hash",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales User",
+   "share": 1
+  }
+ ]
+}

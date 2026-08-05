@@ -68,14 +68,18 @@ def _rank_by_usage(values, fieldnames):
 
 	counts = {v: 0 for v in values}
 	for fieldname in fieldnames:
-		rows = frappe.get_all(
-			"P3 Order Book",
-			filters={fieldname: ["in", values]},
-			fields=[fieldname, "count(name) as cnt"],
-			group_by=fieldname,
+		rows = frappe.db.sql(
+			f"""
+			SELECT `{fieldname}` AS val, COUNT(name) AS cnt
+			FROM `tabP3 Order Book`
+			WHERE `{fieldname}` IN %(values)s
+			GROUP BY `{fieldname}`
+			""",
+			{"values": values},
+			as_dict=True,
 		)
 		for r in rows:
-			counts[r.get(fieldname)] = counts.get(r.get(fieldname), 0) + (r.cnt or 0)
+			counts[r.val] = counts.get(r.val, 0) + (r.cnt or 0)
 
 	return sorted(values, key=lambda v: (-counts.get(v, 0), values.index(v)))
 

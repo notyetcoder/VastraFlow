@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "creation": "2026-08-03 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "product_type",
+  "applies_to",
+  "spec_value",
+  "column_break_1",
+  "amount",
+  "currency",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product Type",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Applies To",
+   "options": "Collar Type\nStitching Type\nSublimation Type",
+   "reqd": 1
+  },
+  {
+   "description": "Must match the exact resolved value shown on P3 Order Book - e.g. \"Round Neck\" for Collar Type, \"Double Stitching\" for Stitching Type, \"Full Sublimation\" for Sublimation Type.",
+   "fieldname": "spec_value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Specific Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Surcharge Amount (per Pc)",
+   "options": "currency",
+   "reqd": 1
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "module": "Apparel Core",
+ "name": "P3 Surcharge",
+ "naming_rule": "Random",
+ "autoname": "hash",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales User",
+   "share": 1
+  }
+ ]
+}

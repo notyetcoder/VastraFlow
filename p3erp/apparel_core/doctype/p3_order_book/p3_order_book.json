@@ -15,6 +15,7 @@
   "delivery_date",
   "column_break_order",
   "product_type",
+  "product_type_label",
   "bom_strategy",
   "sales_order",
   "sales_order_status",
@@ -24,6 +25,7 @@
   "fabric_preview",
   "collar_type",
   "collar_label",
+  "collar_image",
   "collar_preview",
   "column_break_garment",
   "stitching",
@@ -39,6 +41,9 @@
   "column_break_sub_3",
   "sleeve_print",
   "sleeve_colour",
+  "column_break_sub_4",
+  "collar_colour",
+  "border_colour",
   "artwork_file",
   "artwork_preview_html",
   "section_break_matrix",
@@ -117,6 +122,13 @@
    "reqd": 1
   },
   {
+   "fieldname": "product_type_label",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Product Type (Full Name)",
+   "read_only": 1
+  },
+  {
    "default": "BYPASS_BOM",
    "fieldname": "bom_strategy",
    "fieldtype": "Select",
@@ -166,7 +178,8 @@
    "fieldname": "collar_type",
    "fieldtype": "Link",
    "label": "Collar Type",
-   "options": "Item"
+   "options": "Item",
+   "reqd": 1
   },
   {
    "fieldname": "collar_label",
@@ -174,6 +187,13 @@
    "label": "Collar Type (resolved)",
    "read_only": 1,
    "depends_on": "eval:doc.collar_label"
+  },
+  {
+   "fieldname": "collar_image",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Collar Image URL",
+   "read_only": 1
   },
   {
    "fieldname": "collar_preview",
@@ -254,6 +274,22 @@
    "fieldname": "sleeve_colour",
    "fieldtype": "Select",
    "label": "Sleeve Colour",
+   "options": "\nRed\nGreen\nBlue\nBlack\nWhite"
+  },
+  {
+   "fieldname": "column_break_sub_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collar_colour",
+   "fieldtype": "Select",
+   "label": "Collar Colour",
+   "options": "\nRed\nGreen\nBlue\nBlack\nWhite"
+  },
+  {
+   "fieldname": "border_colour",
+   "fieldtype": "Select",
+   "label": "Border Colour",
    "options": "\nRed\nGreen\nBlue\nBlack\nWhite"
   },
   {

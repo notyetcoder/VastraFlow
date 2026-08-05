@@ -1,3 +1,14 @@
+// NOTE ON SAVE vs SUBMIT: this file deliberately never touches
+// frm.page.set_primary_action, disable_save, or anything else that would
+// override Frappe's own toolbar logic. The standard Frappe behavior -
+// primary button reads "Save" whenever the doc is dirty, and only offers
+// "Submit" on a clean, already-saved, submittable draft - is left
+// completely untouched. Every matrix edit calls frm.dirty() (see
+// render_matrix_grid below), which is what correctly flips the primary
+// button back to "Save" the moment something changes after a save. The
+// "Create Sales Order" custom button is intentionally added as a
+// SECONDARY button (frm.add_custom_button), never as the primary action,
+// and only appears post-submit - it can never be confused with Save/Submit.
 const APPAREL_SIZES = [22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54];
 const APPAREL_SLEEVES = [
 	{ code: 'H-S', label: 'Half Sleeve', fieldname: 'hs_qty' },
@@ -29,6 +40,8 @@ const DYNAMIC_SELECT_FIELDS = {
 	front_colour: 'Colour',
 	back_colour: 'Colour',
 	sleeve_colour: 'Colour',
+	collar_colour: 'Colour',
+	border_colour: 'Colour',
 	sublimation_type: 'Sublimation'
 };
 
@@ -61,7 +74,7 @@ frappe.ui.form.on('P3 Order Book', {
 				args: { attribute },
 				callback(r) {
 					let values = r.message || [];
-					let blank_ok = ['front_colour', 'back_colour', 'sleeve_colour', 'stitching'].includes(fieldname);
+					let blank_ok = ['front_colour', 'back_colour', 'sleeve_colour', 'collar_colour', 'border_colour', 'stitching'].includes(fieldname);
 					frm.set_df_property(fieldname, 'options', (blank_ok ? [''] : []).concat(values).join('\n'));
 					frm.refresh_field(fieldname);
 				}
@@ -196,19 +209,54 @@ frappe.ui.form.on('P3 Order Book', {
 			$wrapper.html(`<span style="font-size:11px; color:#8d99a6;">No artwork attached.</span>`);
 			return;
 		}
+
+		let file_url = frm.doc.artwork_file;
+		let file_name = file_url.split('/').pop();
+
 		$wrapper.html(`
-			<div class="p3o-artwork-hover" style="position:relative; display:inline-block;">
-				<img src="${frappe.utils.escape_html(frm.doc.artwork_file)}"
-				     style="width:70px; height:70px; object-fit:cover; border:1px solid #d1d8dd; border-radius:6px; cursor:zoom-in;" />
-				<img src="${frappe.utils.escape_html(frm.doc.artwork_file)}"
-				     class="p3o-artwork-full"
-				     style="display:none; position:absolute; top:0; left:80px; z-index:50; max-width:320px; max-height:320px;
-				            border:1px solid #d1d8dd; border-radius:6px; box-shadow:0 4px 18px rgba(0,0,0,.18); background:#fff; padding:4px;" />
+			<style>
+				.p3o-art-thumb { width:78px; height:78px; object-fit:cover; border:1px solid #d1d8dd;
+					border-radius:8px; cursor:zoom-in; display:block;
+					transition: transform .15s ease, box-shadow .15s ease; }
+				.p3o-art-hover:hover .p3o-art-thumb { transform: scale(1.04); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+				.p3o-art-full-wrap { display:none; opacity:0; position:absolute; z-index:60;
+					transition: opacity .15s ease, transform .15s ease; transform: translateY(4px) scale(.98);
+					background:#fff; border:1px solid #d1d8dd; border-radius:10px;
+					box-shadow: 0 12px 32px rgba(0,0,0,.22); padding:8px; }
+				.p3o-art-full-wrap.p3o-show { display:block; }
+				.p3o-art-full-wrap img { max-width:340px; max-height:340px; display:block; border-radius:6px; }
+				.p3o-art-caption { font-size:10.5px; color:#6b7580; margin-top:6px; text-align:center;
+					max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+			</style>
+			<div class="p3o-art-hover" style="position:relative; display:inline-block;">
+				<img class="p3o-art-thumb" src="${frappe.utils.escape_html(file_url)}" />
+				<div class="p3o-art-full-wrap">
+					<img src="${frappe.utils.escape_html(file_url)}" />
+					<div class="p3o-art-caption">${frappe.utils.escape_html(file_name)}</div>
+				</div>
 			</div>
 		`);
-		$wrapper.find('.p3o-artwork-hover')
-			.on('mouseenter', function () { $(this).find('.p3o-artwork-full').show(); })
-			.on('mouseleave', function () { $(this).find('.p3o-artwork-full').hide(); });
+
+		let $hover = $wrapper.find('.p3o-art-hover');
+		let $full = $wrapper.find('.p3o-art-full-wrap');
+
+		$hover.on('mouseenter', function () {
+			// Edge-aware placement: open to the right by default, flip to
+			// the left if there isn't enough room (e.g. narrow sidebar).
+			let hover_rect = $hover[0].getBoundingClientRect();
+			let opens_right = hover_rect.left + 90 + 340 < window.innerWidth;
+			$full.css({
+				top: 0,
+				left: opens_right ? '90px' : 'auto',
+				right: opens_right ? 'auto' : '90px'
+			});
+			$full.addClass('p3o-show');
+			requestAnimationFrame(() => $full.css({ opacity: 1, transform: 'translateY(0) scale(1)' }));
+		});
+		$hover.on('mouseleave', function () {
+			$full.css({ opacity: 0, transform: 'translateY(4px) scale(.98)' });
+			setTimeout(() => $full.removeClass('p3o-show'), 150);
+		});
 	},
 
 	render_create_so_button(frm) {

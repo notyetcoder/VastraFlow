@@ -10,6 +10,22 @@ ZONE_COLOUR_FIELDS = {
 }
 ZONE_LABELS = {"front_print": "Front", "back_print": "Back", "sleeve_print": "Sleeves"}
 
+# Maps the child table's per-size quantity columns to the Sleeve Type label
+# used everywhere else (P3 Base Price, P3 Surcharge matching, Sales Order
+# line descriptions).
+MATRIX_SLEEVE_COLUMNS = {
+	"hs_qty": "Half Sleeve",
+	"fs_qty": "Full Sleeve",
+	"sl_qty": "Sleeveless",
+}
+
+SURCHARGE_DIMENSIONS = [
+	# (P3O fieldname to read the resolved value from, "Applies To" value in P3 Surcharge)
+	("collar_label", "Collar Type"),
+	("stitching", "Stitching Type"),
+	("sublimation_type", "Sublimation Type"),
+]
+
 
 def _locked_zones_for(sublimation_type):
 	"""Which zones must be 'Sublimation' for a given Sublimation Type value.
@@ -43,11 +59,16 @@ class P3OrderBook(Document):
 
 	Lifecycle:
 	  Save    -> Draft, docstatus 0. No Sales Order touched.
-	  Submit  -> docstatus 1. Requires an active P3 Item Price List entry
-	             for the chosen Product Type (blocked otherwise). Creates a
-	             real (draft) Sales Order priced from that list, links it
-	             back via `sales_order`, then routes to the BOM engine to
-	             create a Work Order against that real Sales Order.
+	  Submit  -> docstatus 1. Every non-empty matrix cell (Size x Sleeve
+	             Type) must resolve to an active P3 Base Price (blocked,
+	             with every missing combination listed at once, otherwise).
+	             Creates a real (draft) Sales Order with ONE line item PER
+	             matrix cell - never merged, even if two cells share a
+	             rate - each priced as base rate + any matching surcharges,
+	             links it back via `sales_order`, then routes to the BOM
+	             engine to create a Work Order against that real Sales
+	             Order (at the whole-order total_qty level - the BOM engine
+	             has no awareness of per-line pricing granularity).
 	  "Create Sales Order" button (create_sales_order_from_book) -> submits
 	             the linked Sales Order for real.
 	  Cancel  -> cascades: cancels the Sales Order if it was submitted,
@@ -55,7 +76,8 @@ class P3OrderBook(Document):
 	             built on top of it.
 
 	Price is deliberately never a field on this DocType or shown anywhere
-	on this form - see P3ItemPriceList for why.
+	on this form - see P3BasePrice / P3Surcharge for why pricing lives in
+	its own dedicated, management-controlled DocTypes instead.
 	"""
 
 	def validate(self):
@@ -70,7 +92,24 @@ class P3OrderBook(Document):
 		if not frappe.db.exists("Item", self.product_type):
 			frappe.throw(_("Product Type {0} does not exist as an Item.").format(self.product_type))
 
-		self.get_active_price(self.product_type)
+		# Validate every cell has a resolvable base price BEFORE attempting
+		# to build the Sales Order, and report every missing combination in
+		# one message rather than making the user fix them one at a time.
+		missing = []
+		for size_code, sleeve_type, qty in self.iter_matrix_cells():
+			try:
+				self.get_base_rate(size_code, sleeve_type)
+			except frappe.ValidationError:
+				missing.append(f"Fabric '{self.fabric_label or self.fabric}' + {sleeve_type} + Size {size_code}")
+
+		if missing:
+			frappe.throw(
+				_(
+					"Cannot submit - no active Base Price found for the following combination(s):"
+					"<br><br>{0}<br><br>Add them in <b>P3 Base Price</b> (or a customer-specific "
+					"entry in <b>P3 Base Price Customer Override</b>) before submitting."
+				).format("<br>".join(missing))
+			)
 
 	def on_submit(self):
 		if not self.sales_order:
@@ -96,7 +135,7 @@ class P3OrderBook(Document):
 		elif so.docstatus == 0:
 			frappe.delete_doc("Sales Order", so.name, ignore_permissions=True)
 
-	# -- helpers -----------------------------------------------------
+	# -- matrix / validation helpers ----------------------------------
 
 	def recalculate_matrix_totals(self):
 		grand_total = 0
@@ -174,9 +213,18 @@ class P3OrderBook(Document):
 		human-readable name ("Soft Micro", "Round Neck") regardless of
 		what the item_name/item_code happen to be, and needs no data
 		cleanup on the ERPNext side to work.
+
+		Product Type isn't a variant - it's a plain Item - so its full
+		name is just item_name directly (e.g. "Hoodies" instead of "HOO").
 		"""
 		self.fabric_label = self._variant_attribute_value(self.fabric, "Fabric")
 		self.collar_label = self._variant_attribute_value(self.collar_type, "Collar Type")
+		self.collar_image = (
+			frappe.db.get_value("Item", self.collar_type, "image") if self.collar_type else ""
+		)
+		self.product_type_label = (
+			frappe.db.get_value("Item", self.product_type, "item_name") if self.product_type else ""
+		)
 
 	@staticmethod
 	def _variant_attribute_value(item_code, attribute_name):
@@ -190,41 +238,138 @@ class P3OrderBook(Document):
 		)
 		return attrs[0].attribute_value if attrs else ""
 
-	def get_active_price(self, product_type):
-		price = frappe.db.get_value(
-			"P3 Item Price List",
-			{"product_type": product_type, "is_active": 1},
+	def iter_matrix_cells(self):
+		"""Yield (size_code, sleeve_type_label, qty) for every non-zero cell
+		in the matrix. This is the single source of truth for "what counts
+		as a cell" - used identically by the before_submit price check and
+		by create_linked_sales_order()'s line-item loop, so the two can
+		never drift out of sync with each other.
+		"""
+		for row in self.get("size_matrix") or []:
+			for column, sleeve_type in MATRIX_SLEEVE_COLUMNS.items():
+				qty = row.get(column) or 0
+				if qty > 0:
+					yield row.size_code, sleeve_type, qty
+
+	# -- pricing --------------------------------------------------------
+
+	def get_base_rate(self, size_code, sleeve_type):
+		"""Exact-match lookup only - no fallback, no partial matching.
+		Customer-specific override list is checked first; the generic list
+		second. Throws if neither has this exact combination.
+		"""
+		override = frappe.db.get_value(
+			"P3 Base Price Customer Override",
+			{
+				"customer": self.customer,
+				"product_type": self.product_type,
+				"fabric": self.fabric,
+				"sleeve_type": sleeve_type,
+				"size": size_code,
+				"is_active": 1,
+			},
 			["rate", "currency"],
 			as_dict=True,
 		)
-		if not price or price.rate in (None, 0):
-			frappe.throw(
-				_(
-					"No active price is defined for Product Type '{0}'. Add one in "
-					"<b>P3 Item Price List</b> before this order can be submitted."
-				).format(product_type)
-			)
-		return price
+		if override:
+			return override
 
-	def spec_summary(self):
-		"""One-line human summary of the garment spec, used as the Sales
-		Order item row's description - useful in general, and specifically
-		what keeps two Sales Orders for the same base Item (e.g. two
-		different "Hoodies" specs) visually distinguishable from each
-		other, since ERPNext doesn't otherwise show a diff between rows
-		beyond the item_code.
+		generic = frappe.db.get_value(
+			"P3 Base Price",
+			{
+				"product_type": self.product_type,
+				"fabric": self.fabric,
+				"sleeve_type": sleeve_type,
+				"size": size_code,
+				"is_active": 1,
+			},
+			["rate", "currency"],
+			as_dict=True,
+		)
+		if generic:
+			return generic
+
+		frappe.throw(
+			_("No Base Price found for Fabric '{0}' + {1} + Size {2}.").format(
+				self.fabric_label or self.fabric, sleeve_type, size_code
+			)
+		)
+
+	def get_surcharge_total(self):
+		"""Sum of all matching surcharges for this order's fixed spec
+		(Collar/Stitching/Sublimation - these don't vary per matrix cell,
+		they're set once on the P3O header). A missing surcharge row is
+		NOT an error - it's treated as zero, since most spec values don't
+		actually change cost.
+		"""
+		total = 0
+		for source_field, applies_to in SURCHARGE_DIMENSIONS:
+			value = self.get(source_field)
+			if not value or (source_field == "sublimation_type" and value == "None"):
+				continue
+			amount = frappe.db.get_value(
+				"P3 Surcharge",
+				{
+					"product_type": self.product_type,
+					"applies_to": applies_to,
+					"spec_value": value,
+					"is_active": 1,
+				},
+				"amount",
+			)
+			total += amount or 0
+		return total
+
+	def spec_summary(self, size_code=None, sleeve_type=None):
+		"""One-line human summary of the garment spec, used as each Sales
+		Order line's description - this is what keeps multiple lines
+		sharing the same Item code visually distinguishable from each
+		other, since every matrix cell becomes its own separate line.
 		"""
 		parts = []
+		if sleeve_type:
+			parts.append(sleeve_type)
+		if size_code:
+			parts.append(f"Size {size_code}")
 		if self.fabric_label:
 			parts.append(f"Fabric: {self.fabric_label}")
 		if self.collar_label:
 			parts.append(f"Collar: {self.collar_label}")
 		if self.sublimation_type and self.sublimation_type != "None":
 			parts.append(f"Sublimation: {self.sublimation_type}")
+		if self.collar_colour:
+			parts.append(f"Collar Colour: {self.collar_colour}")
+		if self.border_colour:
+			parts.append(f"Border Colour: {self.border_colour}")
 		return " | ".join(parts)
 
 	def create_linked_sales_order(self):
-		price = self.get_active_price(self.product_type)
+		"""One Sales Order line item per matrix cell - never merged, even
+		when two cells resolve to an identical rate (confirmed explicitly:
+		every variant gets its own line). Each line's rate = base rate +
+		surcharge total (surcharges are the same for every line on this
+		order, since Collar/Stitching/Sublimation are fixed per order, not
+		per cell).
+		"""
+		surcharge_total = self.get_surcharge_total()
+		items = []
+		currency = None
+
+		for size_code, sleeve_type, qty in self.iter_matrix_cells():
+			base = self.get_base_rate(size_code, sleeve_type)
+			currency = currency or base.currency
+			items.append(
+				{
+					"item_code": self.product_type,
+					"qty": qty,
+					"rate": (base.rate or 0) + surcharge_total,
+					"delivery_date": self.delivery_date,
+					"description": self.spec_summary(size_code, sleeve_type),
+				}
+			)
+
+		if not items:
+			frappe.throw(_("No priceable quantities found in the Size & Sleeve Matrix."))
 
 		so = frappe.get_doc(
 			{
@@ -234,16 +379,8 @@ class P3OrderBook(Document):
 				"contact_person": self.contact_person,
 				"transaction_date": self.transaction_date,
 				"delivery_date": self.delivery_date,
-				"currency": price.currency,
-				"items": [
-					{
-						"item_code": self.product_type,
-						"qty": self.total_qty,
-						"rate": price.rate,
-						"delivery_date": self.delivery_date,
-						"description": self.spec_summary() or None,
-					}
-				],
+				"currency": currency or "INR",
+				"items": items,
 			}
 		)
 		so.insert(ignore_permissions=True)

@@ -1,163 +1,213 @@
 <div class="jc-wrapper" style="font-family: 'Inter', Arial, sans-serif; color: #111417; padding: 4px;">
     <style>
         @page { size: A4; margin: 10mm; }
-        .jc-wrapper table.zone-table, .jc-wrapper table.matrix-table, .jc-wrapper table.signoff-table {
+        .jc-wrapper .cube-row { display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 4px; }
+        .jc-wrapper .cube { flex: 1; border: 1px solid #dfe3e6; border-radius: 6px; padding: 8px 10px;
+            text-align: center; background: #fafbfb; min-width: 0; }
+        .jc-wrapper .cube.cube-wide { flex: 1.6; background: #fff; border: 1.5px solid #111417; }
+        .jc-wrapper .cube .cube-k { font-size: 8.5px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: .04em; color: #6b7580; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .jc-wrapper .cube .cube-v { font-size: 12px; font-weight: 700; overflow-wrap: break-word; }
+        .jc-wrapper .cube img { max-width: 100%; max-height: 46px; object-fit: contain; margin-bottom: 4px; border-radius: 3px; }
+        .jc-wrapper table.matrix-table, .jc-wrapper table.signoff-row {
             width: 100%; border-collapse: collapse; font-size: 11px; }
-        .jc-wrapper table.zone-table th, .jc-wrapper table.zone-table td,
-        .jc-wrapper table.matrix-table th, .jc-wrapper table.matrix-table td,
-        .jc-wrapper table.signoff-table td { border: 1px solid #dfe3e6; padding: 6px 4px; text-align: center; }
-        .jc-wrapper table.zone-table thead th, .jc-wrapper table.matrix-table thead th {
-            background: #111417; color: #fff; font-weight: 700; font-size: 10px; text-transform: uppercase; }
+        .jc-wrapper table.matrix-table th, .jc-wrapper table.matrix-table td {
+            border: 1px solid #dfe3e6; padding: 5px 3px; text-align: center; }
+        .jc-wrapper table.matrix-table thead th {
+            background: #111417; color: #fff; font-weight: 700; font-size: 9.5px; text-transform: uppercase; }
         .jc-wrapper table.matrix-table tfoot td { background: #f1f3f4; font-weight: 800; }
         .jc-wrapper table.matrix-table td.grand { background: #eaf4fe; color: #2490ef; }
-        .jc-wrapper .colour-chip { display: inline-block; width: 9px; height: 9px; border-radius: 2px;
-            margin-right: 4px; border: 1px solid rgba(0,0,0,.15); vertical-align: middle; }
-        .jc-wrapper .checkbox { display: inline-block; width: 12px; height: 12px; border: 1.5px solid #111417;
-            margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+        .jc-wrapper .section-label { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+            border-bottom: 2px solid #111417; padding-bottom: 5px; margin: 14px 0 8px; }
+        .jc-wrapper .signoff-row { display: flex; justify-content: space-between; gap: 10px;
+            border: 1px solid #dfe3e6; border-radius: 6px; padding: 8px 12px; font-size: 10px; }
+        .jc-wrapper .signoff-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .jc-wrapper .checkbox { display: inline-block; width: 11px; height: 11px; border: 1.5px solid #111417;
+            border-radius: 2px; flex-shrink: 0; }
     </style>
 
     <!-- Header -->
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #111417; padding-bottom:14px; margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #111417; padding-bottom:12px; margin-bottom:12px;">
         <div>
-            <h1 style="font-size:22px; font-weight:800; margin:0; letter-spacing:-0.01em;">PRODUCTION JOB CARD</h1>
-            <div style="font-size:11px; color:#6b7580; letter-spacing:.04em; text-transform:uppercase; margin-top:2px;">
+            <h1 style="font-size:20px; font-weight:800; margin:0; letter-spacing:-0.01em;">PRODUCTION JOB CARD</h1>
+            <div style="font-size:10.5px; color:#6b7580; letter-spacing:.04em; text-transform:uppercase; margin-top:2px;">
                 P3 Order Book &middot; Apparel Manufacturing Floor Copy
             </div>
         </div>
         <div style="text-align:right;">
-            <div style="font-family:'JetBrains Mono', monospace; font-size:16px; font-weight:700; color:#2490ef;">{{ doc.name }}</div>
-            <div style="font-size:11px; color:#6b7580; margin-top:3px;">
+            <div style="font-family:'JetBrains Mono', monospace; font-size:15px; font-weight:700; color:#2490ef;">{{ doc.name }}</div>
+            <div style="font-size:10.5px; color:#6b7580; margin-top:3px;">
                 Order: {{ doc.transaction_date }} &nbsp;&middot;&nbsp; Delivery: {{ doc.delivery_date }}
             </div>
         </div>
     </div>
 
-    <!-- TOP BLOCK: Artwork (upper-left, large, no hover - this is a print/PDF, hover doesn't exist on paper)
-         beside Customer + Address + Contact + Dates -->
-    <table style="width:100%; border-collapse:separate; border-spacing:16px 0; margin-bottom:16px;">
+    <!-- TOP: Artwork (large, upper-left, no hover) beside Customer/Address/Contact/Dates -->
+    <table style="width:100%; border-collapse:separate; border-spacing:14px 0; margin-bottom:6px;">
     <tr>
-        <td style="width:30%; vertical-align:top;">
-            <div style="border:1.5px solid #111417; border-radius:4px; padding:8px; text-align:center; background:#fafbfb;">
-                <div style="font-size:9px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#6b7580; margin-bottom:6px;">Artwork</div>
+        <td style="width:28%; vertical-align:top;">
+            <div style="border:1.5px solid #111417; border-radius:6px; padding:8px; text-align:center; background:#fafbfb;">
+                <div style="font-size:8.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#6b7580; margin-bottom:6px;">Artwork</div>
                 {% if doc.artwork_file %}
                 <img src="{{ doc.artwork_file }}" style="width:100%; height:auto; display:block; object-fit:contain; border:1px solid #dfe3e6; border-radius:3px;" />
                 {% else %}
-                <div style="padding:30px 10px; color:#94a3b8; font-size:11px;">No Artwork Attached</div>
+                <div style="padding:26px 10px; color:#94a3b8; font-size:11px;">No Artwork Attached</div>
                 {% endif %}
             </div>
         </td>
-        <td style="width:70%; vertical-align:top;">
-            <div style="border:1px solid #dfe3e6; border-radius:4px; padding:14px; height:100%;">
-                <div style="font-size:16px; font-weight:800; margin-bottom:4px;">{{ doc.customer }}</div>
-                {% if doc.address_display %}
-                <div style="font-size:11px; color:#6b7580; line-height:1.5; margin-bottom:6px;">{{ doc.address_display }}</div>
-                {% endif %}
-                {% if doc.contact_display %}
-                <div style="font-size:11px; color:#6b7580; line-height:1.5; margin-bottom:10px;">{{ doc.contact_display }}</div>
-                {% endif %}
+        <td style="width:72%; vertical-align:top;">
+            <div style="border:1px solid #dfe3e6; border-radius:6px; padding:12px; height:100%;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div>
+                        <div style="font-size:15px; font-weight:800;">{{ doc.customer }}</div>
+                        {% if doc.address_display %}
+                        <div style="font-size:10.5px; color:#6b7580; line-height:1.5;">{{ doc.address_display }}</div>
+                        {% endif %}
+                        {% if doc.contact_display %}
+                        <div style="font-size:10.5px; color:#6b7580; line-height:1.5;">{{ doc.contact_display }}</div>
+                        {% endif %}
+                    </div>
+                    <div style="text-align:right; background:#111417; color:#fff; border-radius:6px; padding:8px 14px;">
+                        <div style="font-size:8.5px; text-transform:uppercase; color:#cfd3d7; font-weight:700;">Total Qty</div>
+                        <div style="font-size:18px; font-weight:800; color:#7ec8ff;">{{ doc.total_qty }} Pcs</div>
+                    </div>
+                </div>
 
-                <table style="width:100%; border-collapse:collapse; margin-top:8px;">
+                <!-- Product name: bigger, bolder, highlighted, full name not code -->
+                <div style="background:#eaf4fe; border:1.5px solid #2490ef; border-radius:6px; padding:8px 12px; margin-bottom:8px;">
+                    <span style="font-size:9px; text-transform:uppercase; color:#2490ef; font-weight:700; letter-spacing:.04em;">Product</span>
+                    <div style="font-size:16px; font-weight:800; color:#111417;">{{ doc.product_type_label or doc.product_type }}</div>
+                </div>
+
+                <table style="width:100%; border-collapse:collapse;">
                     <tr>
-                        <td style="border:1px solid #dfe3e6; padding:7px 10px; width:25%;">
-                            <div style="font-size:9px; text-transform:uppercase; color:#6b7580; font-weight:700;">Order Date</div>
-                            <div style="font-size:12.5px; font-weight:700;">{{ doc.transaction_date }}</div>
+                        <td style="border:1px solid #dfe3e6; padding:6px 10px; width:33%;">
+                            <div style="font-size:8.5px; text-transform:uppercase; color:#6b7580; font-weight:700;">Order Date</div>
+                            <div style="font-size:12px; font-weight:700;">{{ doc.transaction_date }}</div>
                         </td>
-                        <td style="border:1px solid #dfe3e6; padding:7px 10px; width:25%;">
-                            <div style="font-size:9px; text-transform:uppercase; color:#6b7580; font-weight:700;">Delivery Date</div>
-                            <div style="font-size:12.5px; font-weight:700;">{{ doc.delivery_date }}</div>
+                        <td style="border:1px solid #dfe3e6; padding:6px 10px; width:33%;">
+                            <div style="font-size:8.5px; text-transform:uppercase; color:#6b7580; font-weight:700;">Delivery Date</div>
+                            <div style="font-size:12px; font-weight:700;">{{ doc.delivery_date }}</div>
                         </td>
-                        <td style="border:1px solid #dfe3e6; padding:7px 10px; width:25%;">
-                            <div style="font-size:9px; text-transform:uppercase; color:#6b7580; font-weight:700;">Sales Order</div>
-                            <div style="font-size:12.5px; font-weight:700;">{{ doc.sales_order or 'Not yet linked' }}</div>
-                        </td>
-                        <td style="border:1px solid #111417; padding:7px 10px; width:25%; background:#111417;">
-                            <div style="font-size:9px; text-transform:uppercase; color:#cfd3d7; font-weight:700;">Total Qty</div>
-                            <div style="font-size:15px; font-weight:800; color:#7ec8ff;">{{ doc.total_qty }} Pcs</div>
+                        <td style="border:1px solid #dfe3e6; padding:6px 10px; width:34%;">
+                            <div style="font-size:8.5px; text-transform:uppercase; color:#6b7580; font-weight:700;">Sales Order</div>
+                            <div style="font-size:12px; font-weight:700;">{{ doc.sales_order or 'Not yet linked' }}</div>
                         </td>
                     </tr>
                 </table>
-                <div style="margin-top:8px; font-size:11.5px;"><strong>Product:</strong> {{ doc.product_type }}</div>
             </div>
         </td>
     </tr>
     </table>
 
-    <!-- Body: two columns -->
-    <table style="width:100%; border-collapse:separate; border-spacing:16px 0;">
-    <tr>
-    <td style="width:42%; vertical-align:top;">
-
-        <div style="border:1px solid #dfe3e6; border-radius:4px; padding:14px;">
-            <p style="font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #111417; padding-bottom:6px; margin:0 0 10px;">Garment Specification</p>
-            <table style="width:100%; font-size:12.5px;">
-                <tr><td style="color:#6b7580; padding:5px 0; border-bottom:1px dashed #dfe3e6;">Fabric</td><td style="font-weight:600; text-align:right; padding:5px 0; border-bottom:1px dashed #dfe3e6;">{{ doc.fabric_label or doc.fabric or 'N/A' }}</td></tr>
-                <tr><td style="color:#6b7580; padding:5px 0; border-bottom:1px dashed #dfe3e6;">Collar Type</td><td style="font-weight:600; text-align:right; padding:5px 0; border-bottom:1px dashed #dfe3e6;">{{ doc.collar_label or doc.collar_type or 'Standard' }}</td></tr>
-                <tr><td style="color:#6b7580; padding:5px 0; border-bottom:1px dashed #dfe3e6;">Stitching Type</td><td style="font-weight:600; text-align:right; padding:5px 0; border-bottom:1px dashed #dfe3e6;">{{ doc.stitching or 'N/A' }}</td></tr>
-                <tr><td style="color:#6b7580; padding:5px 0;">Buttons</td><td style="font-weight:600; text-align:right; padding:5px 0;">{{ doc.button_qty or 0 }}</td></tr>
-            </table>
+    <!-- GARMENT SPECS / STYLE - horizontal cubes -->
+    <p class="section-label">Garment Specs / Style</p>
+    <div class="cube-row">
+        <div class="cube">
+            <div class="cube-k">Fabric</div>
+            <div class="cube-v">{{ doc.fabric_label or doc.fabric or 'N/A' }}</div>
         </div>
-
-        <div style="border:1px solid #dfe3e6; border-radius:4px; padding:14px; margin-top:14px;">
-            <p style="font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #111417; padding-bottom:6px; margin:0 0 10px;">Sublimation</p>
-            <span style="display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; background:#eaf4fe; color:#2490ef; margin-bottom:10px;">{{ doc.sublimation_type }}</span>
-            <table class="zone-table">
-                <thead><tr><th>Front</th><th>Back</th><th>Sleeves</th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td>{{ doc.front_print or '-' }}{% if doc.front_colour %}<br><span class="colour-chip"></span>{{ doc.front_colour }}{% endif %}</td>
-                        <td>{{ doc.back_print or '-' }}{% if doc.back_colour %}<br><span class="colour-chip"></span>{{ doc.back_colour }}{% endif %}</td>
-                        <td>{{ doc.sleeve_print or '-' }}{% if doc.sleeve_colour %}<br><span class="colour-chip"></span>{{ doc.sleeve_colour }}{% endif %}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-    </td>
-    <td style="width:58%; vertical-align:top;">
-
-        <div style="border:1px solid #dfe3e6; border-radius:4px; padding:14px;">
-            <p style="font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #111417; padding-bottom:6px; margin:0 0 10px;">Cutting &amp; Sewing Breakdown</p>
-            {% if doc.size_matrix %}
-            <table class="matrix-table">
-                <thead><tr><th>Size</th><th>H/S</th><th>F/S</th><th>S/L</th><th>Total</th></tr></thead>
-                <tbody>
-                    {% for row in doc.size_matrix %}
-                    <tr>
-                        <td>{{ row.size_code }}</td>
-                        <td>{{ row.hs_qty or 0 }}</td>
-                        <td>{{ row.fs_qty or 0 }}</td>
-                        <td>{{ row.sl_qty or 0 }}</td>
-                        <td style="font-weight:700;">{{ row.total_qty or 0 }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr><td colspan="4">Grand Total</td><td class="grand">{{ doc.total_qty }} Pcs</td></tr>
-                </tfoot>
-            </table>
-            {% else %}
-            <span style="color:#94a3b8;">No size/sleeve breakdown recorded.</span>
+        <div class="cube cube-wide">
+            <div class="cube-k">Collar Type</div>
+            {% if doc.collar_image %}
+            <img src="{{ doc.collar_image }}" />
             {% endif %}
-
-            {% if doc.notes %}
-            <p style="font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #111417; padding-bottom:6px; margin:14px 0 10px;">Notes</p>
-            <div style="font-size:11.5px; border:1px solid #dfe3e6; border-radius:4px; padding:8px 10px; background:#fafbfb;">{{ doc.notes }}</div>
-            {% endif %}
-
-            <p style="font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; border-bottom:2px solid #111417; padding-bottom:6px; margin:14px 0 10px;">Department Sign-Off</p>
-            <table class="signoff-table">
-                <tr><td style="font-weight:700; text-align:left; width:45%;"><span class="checkbox"></span>Sublimation / Printing</td><td style="text-align:left;">Sign: ______________</td></tr>
-                <tr><td style="font-weight:700; text-align:left;"><span class="checkbox"></span>Cutting Floor</td><td style="text-align:left;">Sign: ______________</td></tr>
-                <tr><td style="font-weight:700; text-align:left;"><span class="checkbox"></span>Sewing &amp; Assembly</td><td style="text-align:left;">Sign: ______________</td></tr>
-                <tr><td style="font-weight:700; text-align:left;"><span class="checkbox"></span>QC &amp; Packaging</td><td style="text-align:left;">Sign: ______________</td></tr>
-            </table>
+            <div class="cube-v">{{ doc.collar_label or doc.collar_type or 'Standard' }}</div>
         </div>
+        <div class="cube">
+            <div class="cube-k">Stitching Type</div>
+            <div class="cube-v">{{ doc.stitching or 'N/A' }}</div>
+        </div>
+        <div class="cube">
+            <div class="cube-k">Buttons</div>
+            <div class="cube-v">{{ doc.button_qty or 0 }}</div>
+        </div>
+    </div>
 
-    </td>
-    </tr>
+    <!-- SUBLIMATION - horizontal cubes -->
+    <p class="section-label">Sublimation ({{ doc.sublimation_type }})</p>
+    <div class="cube-row">
+        <div class="cube">
+            <div class="cube-k">Front</div>
+            <div class="cube-v">{{ doc.front_print or '-' }}{% if doc.front_colour %}<br><span style="font-weight:400; font-size:10px;">{{ doc.front_colour }}</span>{% endif %}</div>
+        </div>
+        <div class="cube">
+            <div class="cube-k">Back</div>
+            <div class="cube-v">{{ doc.back_print or '-' }}{% if doc.back_colour %}<br><span style="font-weight:400; font-size:10px;">{{ doc.back_colour }}</span>{% endif %}</div>
+        </div>
+        <div class="cube">
+            <div class="cube-k">Sleeves</div>
+            <div class="cube-v">{{ doc.sleeve_print or '-' }}{% if doc.sleeve_colour %}<br><span style="font-weight:400; font-size:10px;">{{ doc.sleeve_colour }}</span>{% endif %}</div>
+        </div>
+        {% if doc.collar_colour %}
+        <div class="cube">
+            <div class="cube-k">Collar Colour</div>
+            <div class="cube-v">{{ doc.collar_colour }}</div>
+        </div>
+        {% endif %}
+        {% if doc.border_colour %}
+        <div class="cube">
+            <div class="cube-k">Border Colour</div>
+            <div class="cube-v">{{ doc.border_colour }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ORDER QUANTITY MIX (renamed from "Cutting & Sewing Breakdown") - full width -->
+    <p class="section-label">Order Quantity Mix (Size &times; Sleeve)</p>
+    {% if doc.size_matrix %}
+    <table class="matrix-table">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding-left:8px;">Sleeve Type</th>
+                {% for row in doc.size_matrix %}<th>{{ row.size_code }}</th>{% endfor %}
+                <th style="background:#3a3a3a;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="text-align:left; padding-left:8px; font-weight:700;">Half Sleeve</td>
+                {% for row in doc.size_matrix %}<td>{{ row.hs_qty or 0 }}</td>{% endfor %}
+                <td style="font-weight:700; background:#f1f3f4;">{{ doc.size_matrix | sum(attribute='hs_qty') }}</td>
+            </tr>
+            <tr>
+                <td style="text-align:left; padding-left:8px; font-weight:700;">Full Sleeve</td>
+                {% for row in doc.size_matrix %}<td>{{ row.fs_qty or 0 }}</td>{% endfor %}
+                <td style="font-weight:700; background:#f1f3f4;">{{ doc.size_matrix | sum(attribute='fs_qty') }}</td>
+            </tr>
+            <tr>
+                <td style="text-align:left; padding-left:8px; font-weight:700;">Sleeveless</td>
+                {% for row in doc.size_matrix %}<td>{{ row.sl_qty or 0 }}</td>{% endfor %}
+                <td style="font-weight:700; background:#f1f3f4;">{{ doc.size_matrix | sum(attribute='sl_qty') }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="{{ doc.size_matrix | length + 1 }}" style="text-align:right; padding-right:10px;">Grand Total</td>
+                <td class="grand">{{ doc.total_qty }} Pcs</td>
+            </tr>
+        </tfoot>
     </table>
+    {% else %}
+    <span style="color:#94a3b8;">No size/sleeve breakdown recorded.</span>
+    {% endif %}
 
-    <div style="margin-top:18px; padding-top:10px; border-top:1px solid #dfe3e6; font-size:10px; color:#6b7580; display:flex; justify-content:space-between;">
+    <!-- NOTES - horizontal, full width -->
+    {% if doc.notes %}
+    <p class="section-label">Notes</p>
+    <div style="font-size:11.5px; border:1px solid #dfe3e6; border-radius:6px; padding:10px 12px; background:#fafbfb;">{{ doc.notes }}</div>
+    {% endif %}
+
+    <!-- DEPARTMENT SIGN-OFF - single horizontal line -->
+    <p class="section-label">Department Sign-Off</p>
+    <div class="signoff-row">
+        <div class="signoff-item"><span class="checkbox"></span> Sublimation / Printing: __________</div>
+        <div class="signoff-item"><span class="checkbox"></span> Cutting Floor: __________</div>
+        <div class="signoff-item"><span class="checkbox"></span> Sewing &amp; Assembly: __________</div>
+        <div class="signoff-item"><span class="checkbox"></span> QC &amp; Packaging: __________</div>
+    </div>
+
+    <div style="margin-top:14px; padding-top:8px; border-top:1px solid #dfe3e6; font-size:10px; color:#6b7580; display:flex; justify-content:space-between;">
         <span>BOM Routing: {{ doc.bom_strategy }}</span>
         <span>Generated {{ frappe.utils.now_datetime().strftime('%d %b %Y, %H:%M') }} &mdash; P3 Order Book</span>
     </div>

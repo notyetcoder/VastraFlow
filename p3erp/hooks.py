@@ -1,8 +1,17 @@
 app_name = "p3erp"
-app_title = "P3 Order Book"
-app_publisher = "P3ERP"
-app_description = "P3 Sales Order Creation Tool for Apparel Manufacturing"
-app_email = "dev@p3erp.com"
+# NOTE ON NAMING: app_name/folder/module import path stays "p3erp" - this
+# is the technical Frappe package identifier and renaming it on a bench
+# that already has this app installed and migrated is a real, higher-risk
+# operation (uninstall/reinstall, python import path changes everywhere)
+# that should be done deliberately, on its own, not bundled into a feature
+# build. Everything user-facing below carries the new branding instead.
+app_title = "VastraFlow ERP"
+app_publisher = "VastraFlow"
+app_description = (
+	"GarmentOS Platform for VastraFlow ERP - Order Book, Production Engine, "
+	"Pricing Engine, and Job Card System for apparel manufacturing."
+)
+app_email = "dev@vastraflow.com"
 app_license = "mit"
 
 # This app builds directly on ERPNext DocTypes (Work Order, BOM, Item,
