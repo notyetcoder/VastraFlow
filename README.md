@@ -56,14 +56,21 @@ Three actions, each mapped to a real state change:
 
 1. **Save** — Draft (`docstatus 0`). Nothing else touched.
 2. **Submit** — `docstatus 0 → 1`. Every non-empty cell in the Size &
-   Sleeve Matrix must resolve to an active Base Price (see Pricing below)
-   or submit is blocked, listing every missing combination at once. A
-   real ERPNext Sales Order is created **as a Draft** — one line item per
-   matrix cell, never merged even if two cells share a rate — linked back
-   via `sales_order`, then routed to the BOM Decision Engine to create a
-   Work Order against that real Sales Order.
-3. **Create Sales Order** button (visible after Submit) — actually
-   submits the linked Sales Order (`docstatus 0 → 1`).
+   Sleeve Matrix must resolve to a matching Pricing Rule (see Pricing
+   below) or submit is blocked, listing every missing combination at
+   once. A real ERPNext Sales Order is created **as a Draft** — one line
+   item per matrix cell, never merged even if two cells share a rate —
+   linked back via `sales_order`.
+3. **Create Sales Order** button (visible after Submit) — submits the
+   linked Sales Order for real (`docstatus 0 → 1`), **then** routes to
+   the BOM Decision Engine to create a Work Order against it.
+
+   Work Order creation deliberately happens *here*, not at step 2. ERPNext's
+   own `Work Order.validate_sales_order()` requires the linked Sales Order
+   to already be submitted — pointing a Work Order at a still-draft Sales
+   Order fails with `Sales Order X is not valid`, a real bug hit and fixed
+   during development. This also means Work Orders are only ever created
+   against a genuinely confirmed Sales Order, never a placeholder draft.
 
 **Cancelling** a P3 Order Book cascades to the linked Sales Order: cancels
 it if it was submitted, deletes it if it was still a draft with nothing
@@ -105,15 +112,25 @@ in one pass.
 
 ## BOM routing strategies
 
-- `BYPASS_BOM` — direct Work Order, no BOM, no material transfer.
 - `MATCH_EXISTING` — links an existing active + submitted BOM for the item.
 - `AUTO_CREATE` — clones item lines from the most recent existing BOM for
   that item as a template, then submits a new one. Requires at least one
   prior BOM per product to exist as a seed.
 
-Work Order creation happens once per P3O submission, at the whole-order
-`total_qty` level — it has no awareness of the per-cell pricing
-granularity above.
+`BYPASS_BOM` (direct Work Order, no BOM, no material transfer) is
+disabled, not deleted — the strategy class still exists at
+`bom_engine/strategies/bypass_bom.py` for future use, just not wired into
+`BOMDecisionEngine.STRATEGY_MAP`. Reasoning: if an order genuinely needs
+no BOM/Work Order at all, that's achievable by simply not creating a Work
+Order and going straight to Sales Invoice — it doesn't need a dedicated
+strategy. Re-enable by re-importing it in `bom_engine/manager.py` and
+adding it back to `STRATEGY_MAP` (and back into `bom_strategy`'s Select
+options in `p3_order_book.json`).
+
+Work Order creation happens once, when the "Create Sales Order" button is
+clicked (not at P3O Submit — see the flow section above for why), at the
+whole-order `total_qty` level — it has no awareness of the per-cell
+pricing granularity above.
 
 ## Sublimation zone rules
 

@@ -1,7 +1,13 @@
 import frappe
 from frappe import _
 
-from p3erp.bom_engine.strategies.bypass_bom import BypassBOMStrategy
+# BypassBOMStrategy is intentionally NOT imported/registered below - it's
+# disabled, not deleted (the file is still at
+# bom_engine/strategies/bypass_bom.py for future use). Reasoning: if an
+# order genuinely needs no BOM/Work Order at all, that's just "don't
+# create a Work Order, go straight to Sales Invoice" - which doesn't need
+# a dedicated strategy class to achieve. Re-enable by importing it again
+# and adding it back to STRATEGY_MAP below.
 from p3erp.bom_engine.strategies.match_existing import MatchExistingBOMStrategy
 from p3erp.bom_engine.strategies.auto_generate import AutoGenerateBOMStrategy
 
@@ -10,20 +16,22 @@ class BOMDecisionEngine:
 	"""Strategy dispatcher that routes a submitted P3 Order Book to the
 	correct Work Order creation strategy based on doc.bom_strategy.
 
-	Called directly from P3OrderBook.on_submit() (not via hooks.py
-	doc_events) after the linked Sales Order has already been created, so
-	doc.sales_order is guaranteed to be set by the time this runs.
+	Called from P3OrderBook.create_sales_order_from_book() - deliberately
+	AFTER the linked Sales Order has been submitted (docstatus=1), not at
+	P3O's own on_submit(). ERPNext's own Work Order.validate_sales_order()
+	requires the linked Sales Order to already be submitted; calling this
+	any earlier (against a still-draft Sales Order) fails with "Sales
+	Order X is not valid" - a real bug hit and fixed once already.
 	"""
 
 	STRATEGY_MAP = {
 		"MATCH_EXISTING": MatchExistingBOMStrategy,
 		"AUTO_CREATE": AutoGenerateBOMStrategy,
-		"BYPASS_BOM": BypassBOMStrategy,
 	}
 
 	@classmethod
 	def process_apparel_order(cls, doc, method=None):
-		policy = doc.bom_strategy or "BYPASS_BOM"
+		policy = doc.bom_strategy or "MATCH_EXISTING"
 		strategy_class = cls.STRATEGY_MAP.get(policy)
 
 		if not strategy_class:
@@ -35,6 +43,13 @@ class BOMDecisionEngine:
 
 		if not doc.sales_order:
 			frappe.throw(_("Cannot create a Work Order: Sales Order is missing on {0}.").format(doc.name))
+
+		if not frappe.db.get_value("Sales Order", doc.sales_order, "docstatus") == 1:
+			frappe.throw(
+				_(
+					"Cannot create a Work Order: Sales Order {0} must be submitted first."
+				).format(doc.sales_order)
+			)
 
 		if not doc.product_type or not frappe.db.exists("Item", doc.product_type):
 			frappe.throw(
@@ -54,8 +69,9 @@ class BOMDecisionEngine:
 			# Strategy already raised a clear, user-facing message - just
 			# let it propagate. Frappe's request wrapper will roll back
 			# any partially-created docs (e.g. an inserted BOM before a
-			# failing Work Order insert) since we never call
-			# frappe.db.commit() ourselves here or in the strategies.
+			# failing Work Order insert) - and, since this now runs after
+			# so.submit(), that rollback also correctly undoes the Sales
+			# Order submission itself, keeping the two atomic together.
 			raise
 		except Exception:
 			frappe.log_error(
@@ -71,7 +87,7 @@ class BOMDecisionEngine:
 			return
 
 		frappe.msgprint(
-			_("Apparel Spec {0}: Work Order routed via {1} (WO ID: {2})").format(
+			_("P3 Order Book {0}: Work Order routed via {1} (WO ID: {2})").format(
 				doc.name, policy, result.get("work_order")
 			)
 		)

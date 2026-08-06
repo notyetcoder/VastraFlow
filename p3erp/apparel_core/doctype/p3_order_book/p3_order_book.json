@@ -129,11 +129,11 @@
    "read_only": 1
   },
   {
-   "default": "BYPASS_BOM",
+   "default": "MATCH_EXISTING",
    "fieldname": "bom_strategy",
    "fieldtype": "Select",
    "label": "BOM Routing Strategy",
-   "options": "BYPASS_BOM\nMATCH_EXISTING\nAUTO_CREATE",
+   "options": "MATCH_EXISTING\nAUTO_CREATE",
    "reqd": 1
   },
   {

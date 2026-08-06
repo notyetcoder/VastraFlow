@@ -265,7 +265,7 @@ frappe.ui.form.on('P3 Order Book', {
 
 		if (frm.doc.sales_order_status === 'Submitted') {
 			frm.dashboard.set_headline_alert(
-				`<a href="/app/sales-order/${frm.doc.sales_order}">Sales Order ${frm.doc.sales_order} — Submitted</a>`,
+				`<a href="/app/sales-order/${frm.doc.sales_order}">Sales Order ${frm.doc.sales_order} — Submitted & routed to production</a>`,
 				'green'
 			);
 			return;
@@ -273,7 +273,7 @@ frappe.ui.form.on('P3 Order Book', {
 
 		frm.add_custom_button('Create Sales Order', () => {
 			frappe.confirm(
-				__('This will submit Sales Order {0} for real - it becomes official and shows up in all Sales Order reports/lists. Continue?', [frm.doc.sales_order]),
+				__('This will submit Sales Order {0} for real (visible in all Sales Order reports/lists) and create the Work Order via the {1} strategy. Continue?', [frm.doc.sales_order, frm.doc.bom_strategy]),
 				() => {
 					frm.call('create_sales_order_from_book').then(() => frm.reload_doc());
 				}

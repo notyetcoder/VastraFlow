@@ -112,10 +112,12 @@ class P3OrderBook(Document):
 			so = self.create_linked_sales_order()
 			self.db_set("sales_order", so.name)
 			self.db_set("sales_order_status", "Draft")
-
-		from p3erp.bom_engine.manager import BOMDecisionEngine
-
-		BOMDecisionEngine.process_apparel_order(self)
+		# BOM/Work Order creation happens later, in create_sales_order_from_book(),
+		# once the Sales Order is actually submitted - see that method's
+		# docstring for why. Doing it here (when the Sales Order is still a
+		# draft) is exactly what caused "Sales Order X is not valid" -
+		# ERPNext's own Work Order.validate_sales_order() requires the
+		# linked Sales Order to already have docstatus=1.
 
 	def on_cancel(self):
 		if not self.sales_order:
@@ -341,6 +343,26 @@ class P3OrderBook(Document):
 			parts.append(f"Border Colour: {self.border_colour}")
 		return " | ".join(parts)
 
+	def get_default_company(self):
+		"""Programmatic frappe.get_doc({...}).insert() does NOT get the
+		client-side 'New Document' defaulting that fills in Company when
+		you open a fresh Sales Order in the Desk UI - it has to be
+		resolved explicitly here, or Sales Order submission fails with
+		'Company is mandatory'.
+		"""
+		company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value(
+			"Global Defaults", "default_company"
+		)
+		if not company:
+			frappe.throw(
+				_(
+					"No default Company is configured (neither for your user nor as a Global "
+					"Default) - Sales Order cannot be created without one. Set a default Company "
+					"in your User settings or under Global Defaults."
+				)
+			)
+		return company
+
 	def create_linked_sales_order(self):
 		"""One Sales Order line item per matrix cell - never merged, even
 		when two cells resolve to an identical rate (confirmed explicitly:
@@ -375,6 +397,7 @@ class P3OrderBook(Document):
 			{
 				"doctype": "Sales Order",
 				"customer": self.customer,
+				"company": self.get_default_company(),
 				"customer_address": self.customer_address,
 				"contact_person": self.contact_person,
 				"transaction_date": self.transaction_date,
@@ -390,7 +413,17 @@ class P3OrderBook(Document):
 	def create_sales_order_from_book(self):
 		"""Called by the 'Create Sales Order' button. Submits the Sales
 		Order that was already created (as a draft) when this document was
-		submitted.
+		submitted, THEN routes to the BOM Decision Engine to create the
+		Work Order.
+
+		Work Order creation deliberately happens here, not in on_submit(),
+		because ERPNext's own Work Order.validate_sales_order() requires
+		the linked Sales Order to already be submitted (docstatus=1) - a
+		Work Order pointing at a still-draft Sales Order is rejected by
+		core ERPNext with "Sales Order X is not valid". This is also a
+		more accurate read of "route Work Orders against the ACTUAL Sales
+		Order" - the Work Order should only ever reference a Sales Order
+		that's genuinely real/confirmed, not a draft placeholder.
 		"""
 		if self.docstatus != 1:
 			frappe.throw(_("Submit this P3 Order Book first."))
@@ -406,6 +439,10 @@ class P3OrderBook(Document):
 
 		so.submit()
 		self.db_set("sales_order_status", "Submitted")
+
+		from p3erp.bom_engine.manager import BOMDecisionEngine
+
+		BOMDecisionEngine.process_apparel_order(self)
 		return {"sales_order": so.name, "status": "submitted"}
 
 	@frappe.whitelist()
