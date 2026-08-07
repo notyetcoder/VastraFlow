@@ -1,0 +1,9 @@
+{
+ "doctype": "Page",
+ "module": "Apparel Core",
+ "name": "price-calculator",
+ "page_name": "price-calculator",
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Price Calculator"
+}
