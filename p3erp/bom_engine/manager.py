@@ -13,15 +13,22 @@ from p3erp.bom_engine.strategies.auto_generate import AutoGenerateBOMStrategy
 
 
 class BOMDecisionEngine:
-	"""Strategy dispatcher that routes a submitted P3 Order Book to the
-	correct Work Order creation strategy based on doc.bom_strategy.
+	"""DORMANT - not called from anywhere in the app anymore.
 
-	Called from P3OrderBook.create_sales_order_from_book() - deliberately
-	AFTER the linked Sales Order has been submitted (docstatus=1), not at
-	P3O's own on_submit(). ERPNext's own Work Order.validate_sales_order()
-	requires the linked Sales Order to already be submitted; calling this
-	any earlier (against a still-draft Sales Order) fails with "Sales
-	Order X is not valid" - a real bug hit and fixed once already.
+	This entire module (BOM Decision Engine + strategies) was previously
+	wired into VastraFlow's order-submission flow, but BOM/Work Order
+	integration has been removed from this app entirely per explicit
+	decision - VastraFlow now only creates/submits Sales Orders, nothing
+	else. This code is kept, not deleted, in case BOM/Work Order routing
+	is wanted again in the future - re-wiring it means calling
+	`BOMDecisionEngine.process_apparel_order(doc)` from wherever makes
+	sense once that need returns (previously: VastraFlow's
+	create_sales_order_from_book(), AFTER so.submit() - see git history -
+	because ERPNext's own Work Order.validate_sales_order() requires the
+	linked Sales Order to already be submitted).
+
+	`doc.bom_strategy` no longer exists as a field on VastraFlow either -
+	re-enabling this would need that field added back too.
 	"""
 
 	STRATEGY_MAP = {
@@ -31,7 +38,11 @@ class BOMDecisionEngine:
 
 	@classmethod
 	def process_apparel_order(cls, doc, method=None):
-		policy = doc.bom_strategy or "MATCH_EXISTING"
+		# NOTE: doc.bom_strategy no longer exists as a field on VastraFlow
+		# (see class docstring). Using getattr with a fallback so this
+		# dormant module doesn't immediately throw AttributeError if it's
+		# ever called again before that field is re-added.
+		policy = getattr(doc, "bom_strategy", None) or "MATCH_EXISTING"
 		strategy_class = cls.STRATEGY_MAP.get(policy)
 
 		if not strategy_class:
@@ -87,7 +98,7 @@ class BOMDecisionEngine:
 			return
 
 		frappe.msgprint(
-			_("P3 Order Book {0}: Work Order routed via {1} (WO ID: {2})").format(
+			_("VastraFlow {0}: Work Order routed via {1} (WO ID: {2})").format(
 				doc.name, policy, result.get("work_order")
 			)
 		)

@@ -4,15 +4,21 @@ from frappe.model.document import Document
 
 
 class P3BasePrice(Document):
-	"""Base rate for a (Product Type, Fabric, Sleeve Type, Size) combination.
-	This is the ONLY dimension that scales multiplicatively (product x
-	fabric x sleeve x size = a manageable few hundred rows in practice,
-	not the ~128,000 that a full 7-dimension exact-match table would need).
-	Collar/Stitching/Sublimation are priced separately as additive
-	surcharges (see P3Surcharge) precisely to avoid that explosion - most
-	collar/stitching/sublimation choices don't actually change cost, and
-	forcing them into this table would mean pricing every combination
-	whether or not it matters.
+	"""Fabric is always required; Product Type and Customer are both
+	optional, and which ones are set determines which priority tier a row
+	serves:
+
+	  Customer + Product Type set  -> Customer-specific override for that
+	                                   exact product (highest priority)
+	  Customer set, Product blank  -> Customer-specific override across
+	                                   any product
+	  Product Type set, no Customer -> Product-specific rate (beats Global)
+	  Neither set                  -> Global rate for this Fabric, applies
+	                                   to any product/customer (lowest
+	                                   priority, but the broadest fallback)
+
+	See P3OrderBook.get_base_rate() for the actual lookup order. This one
+	table serves all four tiers instead of needing four separate lists.
 	"""
 
 	def validate(self):
@@ -24,10 +30,12 @@ class P3BasePrice(Document):
 		existing = frappe.db.exists(
 			"P3 Base Price",
 			{
-				"product_type": self.product_type,
 				"fabric": self.fabric,
-				"sleeve_type": self.sleeve_type,
-				"size": self.size,
+				# Frappe stores a blank Link field as '' (empty string),
+				# not SQL NULL - filtering with None here would silently
+				# never match, letting real duplicates slip through.
+				"product_type": self.product_type or "",
+				"customer": self.customer or "",
 				"is_active": 1,
 				"name": ["!=", self.name],
 			},
@@ -35,8 +43,8 @@ class P3BasePrice(Document):
 		if existing and self.is_active:
 			frappe.throw(
 				_(
-					"An active Base Price already exists for this exact combination "
-					"(Product Type + Fabric + Sleeve Type + Size): {0}. "
-					"Deactivate it first, or edit it directly instead of creating a duplicate."
+					"An active Base Price already exists for this exact Fabric + Product Type + "
+					"Customer combination: {0}. Deactivate it first, or edit it directly instead "
+					"of creating a duplicate."
 				).format(existing)
 			)

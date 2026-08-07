@@ -21,15 +21,22 @@ app_license = "mit"
 # unclear "DocType not found".
 required_apps = ["erpnext"]
 
-# NOTE: P3 Order Book's client script (p3_order_book.js) is auto-loaded by
+# NOTE: VastraFlow's client script (vastraflow.js) is auto-loaded by
 # the Frappe framework because it lives alongside the DocType's own folder
-# (apparel_core/doctype/p3_order_book/). It does NOT need to also be
+# (apparel_core/doctype/vastraflow/). It does NOT need to also be
 # registered here via doctype_js - doing so previously caused the refresh
 # handler to fire twice per page load.
 app_include_css = "/assets/p3erp/css/apparel_matrix.css"
 
-# NOTE: P3 Order Book's on_submit/on_cancel logic (including the call into
-# BOMDecisionEngine) lives directly in its own controller
-# (p3_order_book.py). Do NOT also wire it up here via doc_events - that
-# would fire the BOM engine twice per submit, the same class of bug as the
-# duplicate JS registration above.
+# Seeds the default "Affects Price" toggles (Fabric/Sublimation/Size/
+# Sleeve Type/Button on; everything else off) on fresh install - see
+# p3erp/install.py. Uses frappe.db.exists() per-row so this is also safe
+# to call again on an existing install without duplicating anything.
+after_install = "p3erp.install.after_install"
+
+# NOTE: VastraFlow has no doc_events registered here. Its validate/
+# on_submit/on_cancel logic lives directly in its own controller
+# (apparel_core/doctype/vastraflow/vastraflow.py). There is deliberately
+# no BOM/Work Order integration anywhere in this app anymore - it was
+# removed; if a Work Order is ever needed for a specific order, create it
+# manually from the Sales Order the normal ERPNext way.

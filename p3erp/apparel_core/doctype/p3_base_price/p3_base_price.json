@@ -1,27 +1,18 @@
 {
  "actions": [],
- "creation": "2026-08-03 10:00:00.000000",
+ "creation": "2026-08-06 10:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "product_type",
   "fabric",
-  "sleeve_type",
-  "size",
+  "product_type",
+  "customer",
   "column_break_1",
   "rate",
   "currency",
   "is_active"
  ],
  "fields": [
-  {
-   "fieldname": "product_type",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Product Type",
-   "options": "Item",
-   "reqd": 1
-  },
   {
    "fieldname": "fabric",
    "fieldtype": "Link",
@@ -31,20 +22,20 @@
    "reqd": 1
   },
   {
-   "fieldname": "sleeve_type",
-   "fieldtype": "Select",
+   "description": "Leave blank for a Global rate that applies to this Fabric on any Product Type. Set it to make this row a Product-specific override, which wins over the Global rate for that exact product.",
+   "fieldname": "product_type",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Sleeve Type",
-   "options": "Half Sleeve\nFull Sleeve\nSleeveless",
-   "reqd": 1
+   "label": "Product Type (optional \u2014 blank = applies to all products)",
+   "options": "Item"
   },
   {
-   "fieldname": "size",
-   "fieldtype": "Select",
+   "description": "Leave blank unless this row is a Customer-specific override. A Customer override wins over everything else for that exact customer, regardless of what Product Type is set (or left blank) above.",
+   "fieldname": "customer",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Size",
-   "options": "22\n24\n26\n28\n30\n32\n34\n36\n38\n40\n42\n44\n46\n48\n50\n52\n54",
-   "reqd": 1
+   "label": "Customer (optional \u2014 highest priority override)",
+   "options": "Customer"
   },
   {
    "fieldname": "column_break_1",
@@ -103,9 +94,14 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "Manufacturing Manager",
+   "role": "Account Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Manufacturing Manager",
+   "share": 1
   },
   {
    "read": 1,
