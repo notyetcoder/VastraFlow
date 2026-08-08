@@ -1,4 +1,4 @@
-import frappe
+﻿import frappe
 from frappe import _
 
 
@@ -11,7 +11,7 @@ class AutoGenerateBOMStrategy:
 	Order that thinks it needs to consume nothing, which silently breaks
 	stock/material transfer on the shop floor. The previous implementation
 	always inserted `items: []`, so every Auto-Generated BOM was
-	non-functional. Since VastraFlow doesn't capture a raw
+	non-functional. Since vastraflaw doesn't capture a raw
 	material list directly, this strategy clones the item list from the
 	most recently modified existing BOM for the same product as a
 	starting template, and refuses to proceed if none exists - a loud,

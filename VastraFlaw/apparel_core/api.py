@@ -1,4 +1,4 @@
-"""Whitelisted helpers for VastraFlow's dropdowns.
+﻿"""Whitelisted helpers for vastraflaw's dropdowns.
 
 Why this file exists:
 
@@ -20,7 +20,7 @@ Why this file exists:
 
 2. "Most used first" ordering for Link fields (Product Type, Fabric,
    Collar Type) - a custom query function that ranks by how often each
-   value has actually been used on existing VastraFlow records.
+   value has actually been used on existing vastraflaw records.
 """
 
 import frappe
@@ -30,7 +30,7 @@ import frappe
 def get_attribute_values(attribute):
 	"""Return cleaned, de-duplicated attribute_value strings for a given
 	Item Attribute name (e.g. "Stitching", "Colour", "Sublimation"),
-	ordered by how often each value appears on existing VastraFlow
+	ordered by how often each value appears on existing vastraflaw
 	records (most used first), falling back to their original order in
 	Item Attribute for anything never used yet.
 	"""
@@ -51,7 +51,7 @@ def get_attribute_values(attribute):
 
 
 def _guess_fieldname(attribute):
-	"""Map an Item Attribute name to the VastraFlow fieldname(s) whose
+	"""Map an Item Attribute name to the vastraflaw fieldname(s) whose
 	usage should inform ranking. Falls back to no ranking data (just
 	keeps Item Attribute's own order) if we don't recognise it.
 	"""
@@ -71,7 +71,7 @@ def _rank_by_usage(values, fieldnames):
 		rows = frappe.db.sql(
 			f"""
 			SELECT `{fieldname}` AS val, COUNT(name) AS cnt
-			FROM `tabVastraFlow Order Book`
+			FROM `tabvastraflaw Order Book`
 			WHERE `{fieldname}` IN %(values)s
 			GROUP BY `{fieldname}`
 			""",
@@ -96,7 +96,7 @@ def item_link_query(doctype, txt, searchfield, start, page_len, filters):
 	is what actually lets someone pick the right variant by its real
 	name while searching, without needing item_name/item_code to be
 	cleaned up in ERPNext first. Pass `_attribute_name` alongside
-	`variant_of` in filters to enable this (see vastraflow.js setup()).
+	`variant_of` in filters to enable this (see vastraflaw.js setup()).
 	"""
 	import json as _json
 
@@ -136,7 +136,7 @@ def item_link_query(doctype, txt, searchfield, start, page_len, filters):
 		usage_join = f"""
 			LEFT JOIN (
 				SELECT `{usage_fieldname}` AS item_code, COUNT(*) AS usage_count
-				FROM `tabVastraFlow Order Book`
+				FROM `tabvastraflaw Order Book`
 				WHERE docstatus < 2 AND `{usage_fieldname}` IS NOT NULL
 				GROUP BY `{usage_fieldname}`
 			) u ON u.item_code = i.name

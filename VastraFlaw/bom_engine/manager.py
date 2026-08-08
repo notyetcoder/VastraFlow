@@ -1,4 +1,4 @@
-import frappe
+﻿import frappe
 from frappe import _
 
 # BypassBOMStrategy is intentionally NOT imported/registered below - it's
@@ -8,26 +8,26 @@ from frappe import _
 # create a Work Order, go straight to Sales Invoice" - which doesn't need
 # a dedicated strategy class to achieve. Re-enable by importing it again
 # and adding it back to STRATEGY_MAP below.
-from p3erp.bom_engine.strategies.match_existing import MatchExistingBOMStrategy
-from p3erp.bom_engine.strategies.auto_generate import AutoGenerateBOMStrategy
+from vastraflaw.bom_engine.strategies.match_existing import MatchExistingBOMStrategy
+from vastraflaw.bom_engine.strategies.auto_generate import AutoGenerateBOMStrategy
 
 
 class BOMDecisionEngine:
 	"""DORMANT - not called from anywhere in the app anymore.
 
 	This entire module (BOM Decision Engine + strategies) was previously
-	wired into VastraFlow's order-submission flow, but BOM/Work Order
+	wired into vastraflaw's order-submission flow, but BOM/Work Order
 	integration has been removed from this app entirely per explicit
-	decision - VastraFlow now only creates/submits Sales Orders, nothing
+	decision - vastraflaw now only creates/submits Sales Orders, nothing
 	else. This code is kept, not deleted, in case BOM/Work Order routing
 	is wanted again in the future - re-wiring it means calling
 	`BOMDecisionEngine.process_apparel_order(doc)` from wherever makes
-	sense once that need returns (previously: VastraFlow's
+	sense once that need returns (previously: vastraflaw's
 	create_sales_order_from_book(), AFTER so.submit() - see git history -
 	because ERPNext's own Work Order.validate_sales_order() requires the
 	linked Sales Order to already be submitted).
 
-	`doc.bom_strategy` no longer exists as a field on VastraFlow either -
+	`doc.bom_strategy` no longer exists as a field on vastraflaw either -
 	re-enabling this would need that field added back too.
 	"""
 
@@ -38,7 +38,7 @@ class BOMDecisionEngine:
 
 	@classmethod
 	def process_apparel_order(cls, doc, method=None):
-		# NOTE: doc.bom_strategy no longer exists as a field on VastraFlow
+		# NOTE: doc.bom_strategy no longer exists as a field on vastraflaw
 		# (see class docstring). Using getattr with a fallback so this
 		# dormant module doesn't immediately throw AttributeError if it's
 		# ever called again before that field is re-added.
@@ -98,7 +98,7 @@ class BOMDecisionEngine:
 			return
 
 		frappe.msgprint(
-			_("VastraFlow {0}: Work Order routed via {1} (WO ID: {2})").format(
+			_("vastraflaw {0}: Work Order routed via {1} (WO ID: {2})").format(
 				doc.name, policy, result.get("work_order")
 			)
 		)
