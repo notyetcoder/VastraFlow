@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "creation": "2026-08-08 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "fabric",
+  "fabric_label",
+  "sublimation_type",
+  "column_break_1",
+  "rate",
+  "currency",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "description": "Must be a Fabric variant Item (same list used on the Order Book's Fabric field).",
+   "fieldname": "fabric",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Fabric",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fabric_label",
+   "fieldtype": "Data",
+   "label": "Fabric (resolved)",
+   "read_only": 1
+  },
+  {
+   "description": "Options are loaded live from the \"Sublimation\" Item Attribute - nothing here is hardcoded, so adding/renaming a value in that Item Attribute is all that's needed to make it available here too.",
+   "fieldname": "sublimation_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sublimation Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate (per Pc)",
+   "options": "currency",
+   "reqd": 1
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "module": "Apparel Core",
+ "name": "P3 Price List",
+ "naming_rule": "Random",
+ "autoname": "hash",
+ "sort_field": "fabric_label",
+ "sort_order": "ASC",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Account Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Manufacturing Manager",
+   "share": 1
+  }
+ ]
+}

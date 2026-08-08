@@ -1,0 +1,2 @@
+﻿[pre_model_sync]
+vastraflaw.patches.v1_0.rename_vastraflaw_to_order_book
