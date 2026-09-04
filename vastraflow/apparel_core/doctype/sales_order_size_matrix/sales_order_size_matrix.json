@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-04 16:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "size",
+  "full_sleeve",
+  "half_sleeve",
+  "sleeveless",
+  "row_total"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "size",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Size",
+   "read_only": 1,
+   "description": "Size code, driven by VastraFlow Settings"
+  },
+  {
+   "columns": 2,
+   "default": "0",
+   "fieldname": "full_sleeve",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Full Sleeve",
+   "non_negative": 1
+  },
+  {
+   "columns": 2,
+   "default": "0",
+   "fieldname": "half_sleeve",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Half Sleeve",
+   "non_negative": 1
+  },
+  {
+   "columns": 2,
+   "default": "0",
+   "fieldname": "sleeveless",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sleeveless",
+   "non_negative": 1
+  },
+  {
+   "columns": 2,
+   "default": "0",
+   "fieldname": "row_total",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-04 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Apparel Core",
+ "name": "Sales Order Size Matrix",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

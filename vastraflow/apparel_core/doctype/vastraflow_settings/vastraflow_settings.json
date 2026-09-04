@@ -1,0 +1,569 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-04 16:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": [
+  "tab_general",
+  "enabled",
+  "intro_html",
+  "branding_section",
+  "company_logo",
+  "column_break_brand",
+  "default_company",
+  "setup_section",
+  "setup_html",
+
+  "tab_order_rules",
+  "order_entry_section",
+  "auto_populate_size_matrix",
+  "auto_create_item_line",
+  "column_break_order1",
+  "scope_note_html",
+  "validation_section",
+  "block_submit_without_price",
+  "artwork_enforcement",
+  "column_break_valid",
+  "plain_option_value",
+
+  "tab_sizes",
+  "size_mode",
+  "size_range_section",
+  "size_start",
+  "size_end",
+  "column_break_size",
+  "size_step",
+  "size_list_section",
+  "sizes",
+
+  "tab_options",
+  "options_intro_html",
+  "sublimation_section",
+  "sublimation_options",
+  "sleeve_section",
+  "sleeve_options",
+  "stitching_section",
+  "stitching_options",
+  "button_section",
+  "button_options",
+
+  "tab_item_rules",
+  "item_rules_intro_html",
+  "product_section",
+  "product_item_group",
+  "column_break_item1",
+  "product_code_prefix",
+  "fabric_section",
+  "fabric_item_group",
+  "fabric_code_prefix",
+  "column_break_item2",
+  "collar_item_group",
+  "collar_code_prefix",
+
+  "tab_manufacturing",
+  "bom_intro_html",
+  "bom_core_section",
+  "enable_auto_bom",
+  "reuse_matching_bom",
+  "auto_submit_bom",
+  "column_break_bom1",
+  "bom_missing_rule_action",
+  "bom_company",
+  "bom_currency",
+  "work_order_section",
+  "auto_create_work_order",
+  "column_break_wo",
+  "work_order_qty_source",
+  "bom_defaults_section",
+  "default_fabric_qty",
+  "default_fabric_uom",
+  "column_break_bomdef",
+  "include_collar_in_bom",
+  "default_collar_qty",
+  "bom_signature_section",
+  "signature_includes_sublimation",
+  "column_break_sig",
+  "signature_includes_size_band",
+
+  "tab_logs",
+  "log_viewer_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "tab_general",
+   "fieldtype": "Tab Break",
+   "label": "General"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enable VastraFlow",
+   "description": "Master switch. When off, VastraFlow adds no behaviour to Sales Orders."
+  },
+  {
+   "fieldname": "intro_html",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:10px 12px;border-left:3px solid #7c3aed;background:#f8f7ff;border-radius:4px;margin:6px 0 2px'><b>VastraFlow</b> extends the standard ERPNext Sales Order with garment specifications, size/sleeve quantity matrices, matrix-based pricing and automatic BOM generation.<br><br>Nothing here changes how a normal (non-garment) Sales Order behaves &mdash; VastraFlow logic only runs on orders flagged <b>Is Garment Order</b>.</div>"
+  },
+  {
+   "fieldname": "branding_section",
+   "fieldtype": "Section Break",
+   "label": "Branding"
+  },
+  {
+   "fieldname": "company_logo",
+   "fieldtype": "Attach Image",
+   "label": "Company Logo",
+   "description": "Shown on the Production Job Card print format"
+  },
+  {
+   "fieldname": "column_break_brand",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Default Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "setup_section",
+   "fieldtype": "Section Break",
+   "label": "Setup"
+  },
+  {
+   "fieldname": "setup_html",
+   "fieldtype": "HTML",
+   "options": "<div id='vf-setup-status' style='color:#6b7280'>Loading setup status&hellip;</div>"
+  },
+
+  {
+   "fieldname": "tab_order_rules",
+   "fieldtype": "Tab Break",
+   "label": "Order Rules"
+  },
+  {
+   "fieldname": "order_entry_section",
+   "fieldtype": "Section Break",
+   "label": "Order Entry"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_populate_size_matrix",
+   "fieldtype": "Check",
+   "label": "Auto-populate Size Matrix",
+   "description": "Fills the size grid automatically when Is Garment Order is ticked"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_create_item_line",
+   "fieldtype": "Check",
+   "label": "Auto-build Sales Order Item Line",
+   "description": "Creates/updates the order line from the size matrix total and the matched price"
+  },
+  {
+   "fieldname": "column_break_order1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scope_note_html",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:8px 10px;background:#f3f4f6;border-radius:4px;font-size:12px;color:#374151'>These rules apply <b>only</b> to Sales Orders with <b>Is Garment Order</b> ticked. Regular sales flow is untouched.</div>"
+  },
+  {
+   "fieldname": "validation_section",
+   "fieldtype": "Section Break",
+   "label": "Validation"
+  },
+  {
+   "default": "1",
+   "fieldname": "block_submit_without_price",
+   "fieldtype": "Check",
+   "label": "Block Submit Without Price",
+   "description": "Stops submission when no Price Matrix entry matches. Turn off to allow manual rates."
+  },
+  {
+   "default": "Warn Only",
+   "fieldname": "artwork_enforcement",
+   "fieldtype": "Select",
+   "label": "Artwork Requirement",
+   "options": "Ignore\nWarn Only\nBlock Submit",
+   "description": "Applied when sublimation is anything other than the plain option below"
+  },
+  {
+   "fieldname": "column_break_valid",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Plain",
+   "fieldname": "plain_option_value",
+   "fieldtype": "Data",
+   "label": "Plain Sublimation Value",
+   "description": "The sublimation option that needs no artwork. Must match an option exactly."
+  },
+
+  {
+   "fieldname": "tab_sizes",
+   "fieldtype": "Tab Break",
+   "label": "Sizes"
+  },
+  {
+   "default": "Numeric Range",
+   "fieldname": "size_mode",
+   "fieldtype": "Select",
+   "label": "Size Mode",
+   "options": "Numeric Range\nCustom List",
+   "description": "Numeric Range generates sizes automatically. Custom List lets you define any labels (S, M, L, XL...)."
+  },
+  {
+   "depends_on": "eval:doc.size_mode=='Numeric Range'",
+   "fieldname": "size_range_section",
+   "fieldtype": "Section Break",
+   "label": "Numeric Range"
+  },
+  {
+   "default": "22",
+   "fieldname": "size_start",
+   "fieldtype": "Int",
+   "label": "Start Size"
+  },
+  {
+   "default": "54",
+   "fieldname": "size_end",
+   "fieldtype": "Int",
+   "label": "End Size"
+  },
+  {
+   "fieldname": "column_break_size",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "2",
+   "fieldname": "size_step",
+   "fieldtype": "Int",
+   "label": "Step"
+  },
+  {
+   "depends_on": "eval:doc.size_mode=='Custom List'",
+   "fieldname": "size_list_section",
+   "fieldtype": "Section Break",
+   "label": "Custom Sizes"
+  },
+  {
+   "depends_on": "eval:doc.size_mode=='Custom List'",
+   "fieldname": "sizes",
+   "fieldtype": "Table",
+   "label": "Sizes",
+   "options": "VastraFlow Size"
+  },
+
+  {
+   "fieldname": "tab_options",
+   "fieldtype": "Tab Break",
+   "label": "Dropdown Options"
+  },
+  {
+   "fieldname": "options_intro_html",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:10px 12px;border-left:3px solid #f59e0b;background:#fffbeb;border-radius:4px;margin-bottom:6px'>Editing these lists rewrites the dropdowns on the Sales Order and Price Matrix the moment you save &mdash; no code change needed.<br><b>Matching is case-sensitive:</b> a Price Matrix row saved as <code>Front Sublimation</code> will not match an order set to <code>front sublimation</code>.</div>"
+  },
+  {
+   "fieldname": "sublimation_section",
+   "fieldtype": "Section Break",
+   "label": "Sublimation Type"
+  },
+  {
+   "fieldname": "sublimation_options",
+   "fieldtype": "Table",
+   "label": "Sublimation Options",
+   "options": "VastraFlow Option"
+  },
+  {
+   "fieldname": "sleeve_section",
+   "fieldtype": "Section Break",
+   "label": "Sleeve Type",
+   "description": "Sleeve options drive which columns of the size matrix are used"
+  },
+  {
+   "fieldname": "sleeve_options",
+   "fieldtype": "Table",
+   "label": "Sleeve Options",
+   "options": "VastraFlow Option"
+  },
+  {
+   "fieldname": "stitching_section",
+   "fieldtype": "Section Break",
+   "label": "Stitching Type"
+  },
+  {
+   "fieldname": "stitching_options",
+   "fieldtype": "Table",
+   "label": "Stitching Options",
+   "options": "VastraFlow Option"
+  },
+  {
+   "fieldname": "button_section",
+   "fieldtype": "Section Break",
+   "label": "Button Quantity"
+  },
+  {
+   "fieldname": "button_options",
+   "fieldtype": "Table",
+   "label": "Button Options",
+   "options": "VastraFlow Option"
+  },
+
+  {
+   "fieldname": "tab_item_rules",
+   "fieldtype": "Tab Break",
+   "label": "Item Rules"
+  },
+  {
+   "fieldname": "item_rules_intro_html",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:10px 12px;border-left:3px solid #0ea5e9;background:#f0f9ff;border-radius:4px;margin-bottom:6px'>Controls which Items appear in the Product Type, Fabric and Collar dropdowns. Leave a field blank to drop that part of the filter.</div>"
+  },
+  {
+   "fieldname": "product_section",
+   "fieldtype": "Section Break",
+   "label": "Product Type"
+  },
+  {
+   "fieldname": "product_item_group",
+   "fieldtype": "Link",
+   "label": "Product Item Group",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "column_break_item1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_code_prefix",
+   "fieldtype": "Data",
+   "label": "Product Code Prefix",
+   "description": "Optional. Blank means no prefix filter."
+  },
+  {
+   "fieldname": "fabric_section",
+   "fieldtype": "Section Break",
+   "label": "Fabric & Collar"
+  },
+  {
+   "fieldname": "fabric_item_group",
+   "fieldtype": "Link",
+   "label": "Fabric Item Group",
+   "options": "Item Group"
+  },
+  {
+   "default": "FB",
+   "fieldname": "fabric_code_prefix",
+   "fieldtype": "Data",
+   "label": "Fabric Code Prefix"
+  },
+  {
+   "fieldname": "column_break_item2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collar_item_group",
+   "fieldtype": "Link",
+   "label": "Collar Item Group",
+   "options": "Item Group",
+   "description": "Optional"
+  },
+  {
+   "default": "COLL",
+   "fieldname": "collar_code_prefix",
+   "fieldtype": "Data",
+   "label": "Collar Code Prefix"
+  },
+
+  {
+   "fieldname": "tab_manufacturing",
+   "fieldtype": "Tab Break",
+   "label": "Manufacturing"
+  },
+  {
+   "fieldname": "bom_intro_html",
+   "fieldtype": "HTML",
+   "options": "<div style='padding:10px 12px;border-left:3px solid #16a34a;background:#f0fdf4;border-radius:4px;margin-bottom:6px'><b>You never hand-build a BOM.</b> When a garment order needs manufacturing, VastraFlow reads the recipe from <b>VastraFlow BOM Rule</b>, builds a real ERPNext BOM for that exact specification, and reuses it for every future order with the same spec.<br><br>One recipe per product type replaces the fabric &times; collar &times; sleeve &times; size combinations you would otherwise create by hand.</div>"
+  },
+  {
+   "fieldname": "bom_core_section",
+   "fieldtype": "Section Break",
+   "label": "Automatic BOM"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_auto_bom",
+   "fieldtype": "Check",
+   "label": "Enable Automatic BOM",
+   "description": "Generate BOMs on demand from the order specification"
+  },
+  {
+   "default": "1",
+   "fieldname": "reuse_matching_bom",
+   "fieldtype": "Check",
+   "label": "Reuse Matching BOM",
+   "description": "Strongly recommended. Reuses an existing auto-BOM with the same specification instead of creating a duplicate."
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_submit_bom",
+   "fieldtype": "Check",
+   "label": "Auto-submit Generated BOM",
+   "description": "A BOM must be submitted before a Work Order can use it"
+  },
+  {
+   "fieldname": "column_break_bom1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Use Defaults Below",
+   "fieldname": "bom_missing_rule_action",
+   "fieldtype": "Select",
+   "label": "When No BOM Rule Exists",
+   "options": "Use Defaults Below\nBlock With Error",
+   "description": "What to do when the product type has no VastraFlow BOM Rule"
+  },
+  {
+   "fieldname": "bom_company",
+   "fieldtype": "Link",
+   "label": "BOM Company",
+   "options": "Company",
+   "description": "Blank uses the order's company"
+  },
+  {
+   "fieldname": "bom_currency",
+   "fieldtype": "Link",
+   "label": "BOM Currency",
+   "options": "Currency",
+   "description": "Blank uses the company default"
+  },
+  {
+   "fieldname": "work_order_section",
+   "fieldtype": "Section Break",
+   "label": "Work Orders"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_create_work_order",
+   "fieldtype": "Check",
+   "label": "Create Work Order on Submit",
+   "description": "Off by default. When off, use the Create Work Order button on a submitted garment order."
+  },
+  {
+   "fieldname": "column_break_wo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Size Matrix Total",
+   "fieldname": "work_order_qty_source",
+   "fieldtype": "Select",
+   "label": "Work Order Qty From",
+   "options": "Size Matrix Total\nSales Order Item Qty"
+  },
+  {
+   "fieldname": "bom_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Fallback Recipe",
+   "description": "Used when a product type has no BOM Rule of its own"
+  },
+  {
+   "default": "1.2",
+   "fieldname": "default_fabric_qty",
+   "fieldtype": "Float",
+   "label": "Default Fabric Qty per Garment",
+   "precision": "4"
+  },
+  {
+   "fieldname": "default_fabric_uom",
+   "fieldtype": "Link",
+   "label": "Default Fabric UOM",
+   "options": "UOM",
+   "description": "Blank uses the fabric item's stock UOM"
+  },
+  {
+   "fieldname": "column_break_bomdef",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "include_collar_in_bom",
+   "fieldtype": "Check",
+   "label": "Include Collar"
+  },
+  {
+   "default": "1",
+   "fieldname": "default_collar_qty",
+   "fieldtype": "Float",
+   "label": "Default Collar Qty per Garment",
+   "precision": "4"
+  },
+  {
+   "fieldname": "bom_signature_section",
+   "fieldtype": "Section Break",
+   "label": "BOM Reuse Key",
+   "description": "Which parts of the specification make two orders share one BOM. Fewer parts means fewer BOMs."
+  },
+  {
+   "default": "0",
+   "fieldname": "signature_includes_sublimation",
+   "fieldtype": "Check",
+   "label": "Separate BOM per Sublimation Type",
+   "description": "Only needed when sublimation consumes different materials (ink, transfer paper)"
+  },
+  {
+   "fieldname": "column_break_sig",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "signature_includes_size_band",
+   "fieldtype": "Check",
+   "label": "Separate BOM per Size Band",
+   "description": "Only relevant when a BOM Rule scales fabric by size"
+  },
+
+  {
+   "fieldname": "tab_logs",
+   "fieldtype": "Tab Break",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "log_viewer_html",
+   "fieldtype": "HTML",
+   "label": "Recent Activity",
+   "options": "<div id='vf-log-viewer' style='color:#6b7280'>Loading recent activity&hellip;</div>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-04 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Apparel Core",
+ "name": "VastraFlow Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

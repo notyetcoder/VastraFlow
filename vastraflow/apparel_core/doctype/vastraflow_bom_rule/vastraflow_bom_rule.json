@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:product_type",
+ "creation": "2026-09-04 16:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "product_type",
+  "is_active",
+  "column_break_head",
+  "description",
+  "fabric_section",
+  "use_order_fabric",
+  "fixed_fabric_item",
+  "fabric_qty_per_unit",
+  "column_break_fabric",
+  "fabric_uom",
+  "size_scaling",
+  "base_size",
+  "fabric_per_size_step",
+  "collar_section",
+  "include_collar",
+  "collar_qty_per_unit",
+  "components_section",
+  "components"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Product Type",
+   "options": "Item",
+   "reqd": 1,
+   "unique": 1,
+   "description": "The finished garment this recipe applies to"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "fabric_section",
+   "fieldtype": "Section Break",
+   "label": "Fabric Consumption"
+  },
+  {
+   "default": "1",
+   "fieldname": "use_order_fabric",
+   "fieldtype": "Check",
+   "label": "Use Fabric From Order",
+   "description": "Recommended. The fabric chosen on the Sales Order becomes the BOM raw material, so one recipe covers every fabric."
+  },
+  {
+   "depends_on": "eval:!doc.use_order_fabric",
+   "fieldname": "fixed_fabric_item",
+   "fieldtype": "Link",
+   "label": "Fixed Fabric Item",
+   "options": "Item",
+   "mandatory_depends_on": "eval:!doc.use_order_fabric"
+  },
+  {
+   "default": "1.2",
+   "fieldname": "fabric_qty_per_unit",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Fabric Qty per Garment",
+   "precision": "4",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fabric",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fabric_uom",
+   "fieldtype": "Link",
+   "label": "Fabric UOM",
+   "options": "UOM",
+   "description": "Blank uses the fabric item's stock UOM"
+  },
+  {
+   "default": "0",
+   "fieldname": "size_scaling",
+   "fieldtype": "Check",
+   "label": "Scale Fabric by Size",
+   "description": "Adds fabric for sizes above the base size"
+  },
+  {
+   "default": "38",
+   "depends_on": "size_scaling",
+   "fieldname": "base_size",
+   "fieldtype": "Data",
+   "label": "Base Size"
+  },
+  {
+   "default": "0.03",
+   "depends_on": "size_scaling",
+   "fieldname": "fabric_per_size_step",
+   "fieldtype": "Float",
+   "label": "Extra Fabric per Size Step",
+   "precision": "4"
+  },
+  {
+   "fieldname": "collar_section",
+   "fieldtype": "Section Break",
+   "label": "Collar"
+  },
+  {
+   "default": "1",
+   "fieldname": "include_collar",
+   "fieldtype": "Check",
+   "label": "Include Collar From Order"
+  },
+  {
+   "default": "1",
+   "depends_on": "include_collar",
+   "fieldname": "collar_qty_per_unit",
+   "fieldtype": "Float",
+   "label": "Collar Qty per Garment",
+   "precision": "4"
+  },
+  {
+   "fieldname": "components_section",
+   "fieldtype": "Section Break",
+   "label": "Other Components",
+   "description": "Thread, buttons, labels, packaging - anything else consumed per garment"
+  },
+  {
+   "fieldname": "components",
+   "fieldtype": "Table",
+   "label": "Components",
+   "options": "VastraFlow BOM Component"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-04 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Apparel Core",
+ "name": "VastraFlow BOM Rule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,14 @@
+/* VastraFlow - keeps the size matrix readable at 17+ rows. */
+
+.frappe-control[data-fieldname="size_matrix"] .grid-body .col {
+	font-variant-numeric: tabular-nums;
+}
+
+.frappe-control[data-fieldname="size_matrix"] .grid-row .col:first-child {
+	font-weight: 600;
+}
+
+/* The generated order line is read-only in spirit - dim it slightly. */
+.frappe-control[data-fieldname="items"] .grid-row[data-vf-generated="1"] {
+	background: var(--fg-color, #fff);
+}

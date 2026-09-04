@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-04 16:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "qty_per_unit",
+  "uom",
+  "basis",
+  "apply_if_sleeve"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "default": "1",
+   "fieldname": "qty_per_unit",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty",
+   "precision": "4",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "UOM",
+   "options": "UOM",
+   "description": "Blank uses the item's stock UOM"
+  },
+  {
+   "columns": 2,
+   "default": "Per Garment",
+   "fieldname": "basis",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Basis",
+   "options": "Per Garment\nPer Button",
+   "description": "Per Button multiplies Qty by the order's button count"
+  },
+  {
+   "columns": 2,
+   "default": "All",
+   "fieldname": "apply_if_sleeve",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Only If Sleeve",
+   "options": "All\nFull Sleeve\nHalf Sleeve\nSleeveless"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-04 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Apparel Core",
+ "name": "VastraFlow BOM Component",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
