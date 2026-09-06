@@ -136,6 +136,33 @@ def load_starter_data():
 
 
 @frappe.whitelist()
+def bulk_submit_price_matrix():
+	"""Submit every draft VastraFlow Price Matrix row in one call.
+
+	Pairs with Frappe's own Data Import tool (Setup > Data Import), which already
+	handles bulk-creating Price Matrix rows for any doctype - it just leaves them as
+	drafts, and pricing only ever matches a submitted row. This closes that one gap
+	so "import a price list" is import -> one click, not import -> open every row.
+	"""
+	frappe.only_for("System Manager")
+
+	names = frappe.get_all("VastraFlow Price Matrix", filters={"docstatus": 0}, pluck="name")
+	submitted, failed = [], []
+
+	for name in names:
+		try:
+			doc = frappe.get_doc("VastraFlow Price Matrix", name)
+			doc.submit()
+			submitted.append(name)
+		except Exception as exc:
+			failed.append({"name": name, "error": str(exc)})
+
+	frappe.db.commit()
+	get_logger().info(f"Bulk-submitted {len(submitted)} Price Matrix rows ({len(failed)} failed)")
+	return {"submitted": len(submitted), "failed": failed}
+
+
+@frappe.whitelist()
 def get_attribute_values(attribute_name: str):
 	"""Values of an Item Attribute, in display order."""
 	try:

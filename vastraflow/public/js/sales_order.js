@@ -24,8 +24,15 @@ vastraflow.get_config = function () {
 
 vastraflow.apply_link_filters = function (frm, config) {
 	const filters = (config && config.filters) || {};
-	["product_type", "fabric", "collar_type"].forEach((field) => {
+	["fabric", "collar_type"].forEach((field) => {
 		frm.set_query(field, () => ({ filters: filters[field] || {} }));
+	});
+
+	// The garment itself is picked in the standard Items table, not a separate
+	// field - restrict item_code there to the Products group, but only while this
+	// is a garment order, so an ordinary Sales Order keeps its normal item picker.
+	frm.set_query("item_code", "items", () => {
+		return frm.doc.is_garment_order ? { filters: filters.product_type || {} } : {};
 	});
 };
 
@@ -45,23 +52,53 @@ vastraflow.populate_size_matrix = function (frm, config) {
 	frm.refresh_field("size_matrix");
 };
 
-// Show only the sleeve column that matches the selected sleeve type.
-vastraflow.apply_sleeve_columns = function (frm) {
-	const grid = frm.fields_dict.size_matrix && frm.fields_dict.size_matrix.grid;
+// All three sleeve columns (Full/Half/Sleeveless) are always visible and editable.
+//
+// This used to hide the two columns that didn't match the selected Sleeve Type via
+// grid.update_docfield_property(), which mutates Frappe's *shared* cached docfield
+// definition for the whole child doctype - not something scoped to this one form.
+// If that ran while the grid had no rows yet (e.g. a fresh form before the matrix
+// populates), the hidden state could get stuck from a previous edit and never
+// reset, leaving a column permanently non-interactive - which looked exactly like
+// "the Size Matrix doesn't accept input." Always showing all three columns removes
+// that whole failure mode. The server (_normalize_sleeves) still only counts
+// whichever column matches Sleeve Type when computing the total - see that field's
+// description on the form.
+vastraflow.apply_sleeve_columns = function (frm) {};
+
+// The garment is picked in the standard Items table (item_code stays editable,
+// filtered to Products - see apply_link_filters). Qty and Rate are not the user's
+// to set though - those come from the Size & Sleeve Matrix and the Price Matrix -
+// so only those two columns are locked, and only while this is a garment order.
+vastraflow.lock_items_grid = function (frm) {
+	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
 	if (!grid) return;
 
-	const keep = vastraflow.SLEEVE_COLUMNS[frm.doc.sleeve_type];
+	const lock = !!frm.doc.is_garment_order;
 	try {
-		vastraflow.ALL_SLEEVE_COLUMNS.forEach((column) => {
-			const hidden = keep && column !== keep ? 1 : 0;
-			grid.update_docfield_property(column, "hidden", hidden);
-			grid.update_docfield_property(column, "in_list_view", hidden ? 0 : 1);
-		});
+		["qty", "rate"].forEach((column) => grid.update_docfield_property(column, "read_only", lock ? 1 : 0));
+		frm.set_df_property(
+			"items",
+			"description",
+			lock
+				? __("Qty and Rate are set automatically from the Size Matrix and Price Matrix below.")
+				: ""
+		);
 		grid.refresh();
 	} catch (e) {
-		// A framework difference must never break the form.
-		console.warn("VastraFlow: could not toggle sleeve columns", e);
+		console.warn("VastraFlow: could not lock the Items grid columns", e);
 	}
+};
+
+// Standard ERPNext requires a Delivery Date on every Items row before it will even
+// let the browser submit a save - it does this in the client, before our server-side
+// before_validate (which does the same fill) ever gets a chance to run. So the fill
+// has to happen here too, or the save is blocked before VastraFlow sees it.
+vastraflow.sync_item_delivery_dates = function (frm) {
+	if (!frm.doc.is_garment_order || !frm.doc.delivery_date) return;
+	(frm.doc.items || []).forEach((row) => {
+		if (!row.delivery_date) row.delivery_date = frm.doc.delivery_date;
+	});
 };
 
 vastraflow.recalculate_total = function (frm) {
@@ -76,9 +113,18 @@ vastraflow.recalculate_total = function (frm) {
 	frm.refresh_field("size_matrix");
 };
 
+// The garment item lives in the Items table, not a field on the form, and the
+// server only mirrors it onto `product_type` on save - so for a live preview
+// before that save happens, read it straight from the Items table instead.
+vastraflow.current_product_item = function (frm) {
+	const row = (frm.doc.items || [])[0];
+	return row ? row.item_code : null;
+};
+
 vastraflow.refresh_price = function (frm) {
 	if (!frm.doc.is_garment_order) return;
-	if (!(frm.doc.product_type && frm.doc.fabric && frm.doc.sublimation_type)) {
+	const productItem = vastraflow.current_product_item(frm);
+	if (!(productItem && frm.doc.fabric && frm.doc.sublimation_type)) {
 		frm.set_value("vf_matched_rate", 0);
 		return;
 	}
@@ -86,7 +132,7 @@ vastraflow.refresh_price = function (frm) {
 	frappe.call({
 		method: "vastraflow.apparel_core.pricing.preview_price",
 		args: {
-			product_type: frm.doc.product_type,
+			product_type: productItem,
 			fabric: frm.doc.fabric,
 			sublimation_type: frm.doc.sublimation_type,
 		},
@@ -96,7 +142,7 @@ vastraflow.refresh_price = function (frm) {
 			if (!result.found) {
 				frm.dashboard.set_headline_alert(
 					__("No Price Matrix entry matches {0} + {1} + {2}.", [
-						frm.doc.product_type,
+						productItem,
 						frm.doc.fabric,
 						frm.doc.sublimation_type,
 					]),
@@ -200,6 +246,7 @@ frappe.ui.form.on("Sales Order", {
 	},
 
 	refresh: function (frm) {
+		vastraflow.lock_items_grid(frm);
 		vastraflow.get_config().then((config) => {
 			if (!config.enabled) return;
 			vastraflow.apply_link_filters(frm, config);
@@ -208,7 +255,17 @@ frappe.ui.form.on("Sales Order", {
 		});
 	},
 
+	// Belt-and-braces: this runs right before the browser's own mandatory-field
+	// check, which is what actually blocks the save if an Items row is missing a
+	// Delivery Date - by the time our server-side before_validate could fix it,
+	// the request has already been refused client-side.
+	before_save: function (frm) {
+		vastraflow.sync_item_delivery_dates(frm);
+	},
+
 	is_garment_order: function (frm) {
+		vastraflow.lock_items_grid(frm);
+		vastraflow.sync_item_delivery_dates(frm);
 		vastraflow.get_config().then((config) => {
 			vastraflow.populate_size_matrix(frm, config);
 			vastraflow.apply_sleeve_columns(frm);
@@ -216,13 +273,13 @@ frappe.ui.form.on("Sales Order", {
 		});
 	},
 
+	delivery_date: function (frm) {
+		vastraflow.sync_item_delivery_dates(frm);
+	},
+
 	sleeve_type: function (frm) {
 		vastraflow.apply_sleeve_columns(frm);
 		vastraflow.recalculate_total(frm);
-	},
-
-	product_type: function (frm) {
-		vastraflow.refresh_price(frm);
 	},
 
 	fabric: function (frm) {
@@ -239,4 +296,16 @@ frappe.ui.form.on("Sales Order Size Matrix", {
 	half_sleeve: (frm) => vastraflow.recalculate_total(frm),
 	sleeveless: (frm) => vastraflow.recalculate_total(frm),
 	size_matrix_remove: (frm) => vastraflow.recalculate_total(frm),
+});
+
+// The garment item itself changing (picked in the standard Items table) also
+// needs a fresh price preview - it is the third leg of the price match, same as
+// Fabric and Sublimation Type above.
+frappe.ui.form.on("Sales Order Item", {
+	item_code: (frm) => vastraflow.refresh_price(frm),
+	items_add: (frm) => {
+		vastraflow.sync_item_delivery_dates(frm);
+		vastraflow.refresh_price(frm);
+	},
+	items_remove: (frm) => vastraflow.refresh_price(frm),
 });

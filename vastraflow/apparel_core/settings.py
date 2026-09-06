@@ -9,13 +9,25 @@ import frappe
 
 SETTINGS_DOCTYPE = "VastraFlow Settings"
 
-# Settings table field -> the Sales Order field whose Select options it drives.
+# Settings table -> the Sales Order field(s) whose Select options it drives.
 # `optional` prepends a blank line so the user can clear the field.
+# A table may drive more than one field (colour_options feeds four separate pickers).
 OPTION_SOURCES = {
-	"sublimation_options": {"fieldname": "sublimation_type", "optional": False},
-	"sleeve_options": {"fieldname": "sleeve_type", "optional": False},
-	"stitching_options": {"fieldname": "stitching_type", "optional": True},
-	"button_options": {"fieldname": "button_quantity", "optional": True},
+	"sublimation_options": {"fieldnames": ["sublimation_type"], "optional": False},
+	"sleeve_options": {"fieldnames": ["sleeve_type"], "optional": False},
+	"stitching_options": {"fieldnames": ["stitching_type"], "optional": True},
+	"button_options": {"fieldnames": ["button_quantity"], "optional": True},
+	"colour_options": {
+		"fieldnames": ["front_colour", "back_colour", "sleeve_colour", "border_colour", "collar_colour"],
+		"optional": True,
+	},
+	# Print-only choice for each sublimation panel (Colour vs A4-size transfer). Does
+	# not affect pricing or the BOM - purely what prints on the Job Card - so it is
+	# fully user-editable here, same as every other dropdown.
+	"treatment_options": {
+		"fieldnames": ["front_treatment", "back_treatment", "sleeve_treatment"],
+		"optional": True,
+	},
 }
 
 # Hard ceiling so a fat-fingered size range cannot generate thousands of grid rows.
@@ -77,22 +89,31 @@ def get_size_factor(size_label: str, settings=None) -> float:
 
 
 def get_item_query_filters(kind: str, settings=None) -> list[list]:
-	"""Link-field filters for product / fabric / collar, built from Settings."""
+	"""Link-field filters for product / fabric / collar, built from Settings.
+
+	Fabric and Collar are picked from the variants of one template Item (e.g. every
+	FB-* fabric is a variant of the FB template). ``variant_of`` is therefore the
+	primary filter; item group / code prefix still apply on top when configured, and
+	remain the only filter for Product Type, which is not variant-based.
+	"""
 	settings = settings or get_settings()
 	filters: list[list] = []
 
-	group_field, prefix_field = {
-		"product": ("product_item_group", "product_code_prefix"),
-		"fabric": ("fabric_item_group", "fabric_code_prefix"),
-		"collar": ("collar_item_group", "collar_code_prefix"),
-	}.get(kind, (None, None))
+	group_field, prefix_field, template_field = {
+		"product": ("product_item_group", "product_code_prefix", None),
+		"fabric": ("fabric_item_group", "fabric_code_prefix", "fabric_template_item"),
+		"collar": ("collar_item_group", "collar_code_prefix", "collar_template_item"),
+	}.get(kind, (None, None, None))
 
 	if not group_field:
 		return filters
 
 	group = (settings.get(group_field) or "").strip()
 	prefix = (settings.get(prefix_field) or "").strip()
+	template = (settings.get(template_field) or "").strip() if template_field else ""
 
+	if template:
+		filters.append(["Item", "variant_of", "=", template])
 	if group:
 		filters.append(["Item", "item_group", "=", group])
 	if prefix:
@@ -123,8 +144,9 @@ def sync_select_options(settings=None) -> dict:
 		if spec["optional"]:
 			options = "\n" + options
 
-		set_custom_field_options("Sales Order", spec["fieldname"], options)
-		applied[spec["fieldname"]] = values
+		for fieldname in spec["fieldnames"]:
+			set_custom_field_options("Sales Order", fieldname, options)
+			applied[fieldname] = values
 
 	# The Price Matrix sublimation field is a real DocType field, so it needs a
 	# Property Setter rather than a Custom Field update.

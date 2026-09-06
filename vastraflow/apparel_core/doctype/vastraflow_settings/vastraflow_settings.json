@@ -49,6 +49,10 @@
   "stitching_options",
   "button_section",
   "button_options",
+  "colour_section",
+  "colour_options",
+  "treatment_section",
+  "treatment_options",
 
   "tab_item_rules",
   "item_rules_intro_html",
@@ -57,9 +61,11 @@
   "column_break_item1",
   "product_code_prefix",
   "fabric_section",
+  "fabric_template_item",
   "fabric_item_group",
   "fabric_code_prefix",
   "column_break_item2",
+  "collar_template_item",
   "collar_item_group",
   "collar_code_prefix",
 
@@ -316,6 +322,30 @@
    "label": "Button Options",
    "options": "VastraFlow Option"
   },
+  {
+   "fieldname": "colour_section",
+   "fieldtype": "Section Break",
+   "label": "Colour",
+   "description": "Used for Collar Colour and the Front/Back/Sleeve panel colour, when a sublimation panel's treatment is set to Colour"
+  },
+  {
+   "fieldname": "colour_options",
+   "fieldtype": "Table",
+   "label": "Colour Options",
+   "options": "VastraFlow Option"
+  },
+  {
+   "fieldname": "treatment_section",
+   "fieldtype": "Section Break",
+   "label": "Sublimation Panel Treatment",
+   "description": "Options for the Front/Back/Sleeve/Border choice on a garment order. Print-only - does not affect pricing or the BOM."
+  },
+  {
+   "fieldname": "treatment_options",
+   "fieldtype": "Table",
+   "label": "Treatment Options",
+   "options": "VastraFlow Option"
+  },
 
   {
    "fieldname": "tab_item_rules",
@@ -354,6 +384,13 @@
    "label": "Fabric & Collar"
   },
   {
+   "fieldname": "fabric_template_item",
+   "fieldtype": "Link",
+   "label": "Fabric Template Item",
+   "options": "Item",
+   "description": "The Item with Has Variants ticked (e.g. FB). Fabric offers only its variants."
+  },
+  {
    "fieldname": "fabric_item_group",
    "fieldtype": "Link",
    "label": "Fabric Item Group",
@@ -368,6 +405,13 @@
   {
    "fieldname": "column_break_item2",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collar_template_item",
+   "fieldtype": "Link",
+   "label": "Collar Template Item",
+   "options": "Item",
+   "description": "The Item with Has Variants ticked (e.g. COLL). Collar Type offers only its variants."
   },
   {
    "fieldname": "collar_item_group",

@@ -69,24 +69,63 @@ def _total_qty(doc) -> int:
 	return sum(int(flt(row.get(c))) for row in (doc.get("size_matrix") or []) for c in ALL_SLEEVE_COLUMNS)
 
 
+# Sublimation types that fix (lock) the front / back panel to the print, leaving only
+# the other panels open for a Colour/A4 choice. Mirrors FRONT_LOCKED / BACK_LOCKED in
+# custom_fields.py - kept in sync manually since one is a Python set and the other a
+# client-side eval string.
+_FRONT_LOCKED = {"Front Sublimation", "Front & Back sublimation", "Full sublimation"}
+_BACK_LOCKED = {"Back Sublimation", "Front & Back sublimation", "Full sublimation"}
+_ANY_SUBLIMATION = _FRONT_LOCKED | _BACK_LOCKED
+
+
+def _normalize_panels(doc):
+	"""Clear Front/Back/Sleeve panel fields that no longer apply, so stale data from
+	a previous Sublimation Type or Sleeve Type selection is never carried forward or
+	printed. The client only *blocks editing* of a locked panel (read_only_depends_on)
+	rather than hiding it, so a value set before the lock kicked in would otherwise
+	survive untouched - this is what actually clears it.
+
+	Border Colour and Collar Colour have no lock/treatment step at all (see
+	custom_fields.py) - just plain optional colours, nothing to normalize here."""
+	sublimation = doc.get("sublimation_type")
+
+	# "None" is a non-empty string - checking truthiness alone (the bug this fixed)
+	# treated "no sublimation" as "sublimation is happening". Must check membership
+	# in _ANY_SUBLIMATION instead.
+	front_open = sublimation in _ANY_SUBLIMATION and sublimation not in _FRONT_LOCKED
+	back_open = sublimation in _ANY_SUBLIMATION and sublimation not in _BACK_LOCKED
+	sleeve_open = sublimation in _ANY_SUBLIMATION and doc.get("sleeve_type") != "Sleeveless"
+
+	for open_, treatment_field, colour_field in (
+		(front_open, "front_treatment", "front_colour"),
+		(back_open, "back_treatment", "back_colour"),
+		(sleeve_open, "sleeve_treatment", "sleeve_colour"),
+	):
+		if not open_:
+			doc.set(treatment_field, "")
+			doc.set(colour_field, "")
+		elif doc.get(treatment_field) != "Colour":
+			doc.set(colour_field, "")
+
+
+def _product_item(doc) -> str | None:
+	"""The finished garment for this order - the first row of the standard Items
+	table. The user picks it there, the normal ERPNext way; nothing else asks for it
+	a second time."""
+	rows = doc.get("items") or []
+	return rows[0].item_code if rows else None
+
+
 def _sync_item_line(doc, total_qty, rate):
-	"""Keep one Sales Order Item in step with the matrix total and matched rate."""
-	if not doc.get("product_type") or total_qty <= 0:
+	"""Keep the garment's Item line in step with the matrix total and matched rate.
+
+	Only qty/uom/rate are ours to set - item_code is the user's own pick in the
+	Items table and is never touched here."""
+	row = (doc.get("items") or [None])[0]
+	if row is None or total_qty <= 0:
 		return
 
-	row = next((r for r in (doc.get("items") or []) if r.get("vf_generated")), None)
-	if row is None:
-		row = next((r for r in (doc.get("items") or []) if r.item_code == doc.product_type), None)
-
-	if row is None:
-		row = doc.append("items", {})
-		row.item_code = doc.product_type
-
-	# The item changed on an existing garment order - repoint the generated line.
-	if row.get("vf_generated") and row.item_code != doc.product_type:
-		row.item_code = doc.product_type
-
-	stock_uom = frappe.db.get_value("Item", doc.product_type, "stock_uom")
+	stock_uom = frappe.db.get_value("Item", row.item_code, "stock_uom")
 	row.vf_generated = 1
 	row.qty = total_qty
 	if stock_uom:
@@ -107,16 +146,25 @@ def before_validate(doc, method=None):
 
 	settings = get_settings()
 
+	# Auto-synced mirror of the Items table's first row - see _product_item. Done
+	# first so every check and lookup below (pricing, BOM matching, the report, the
+	# print format) sees it, exactly as if it were still typed in directly.
+	doc.product_type = _product_item(doc)
+
 	_ensure_size_matrix(doc, settings)
 	_normalize_sleeves(doc)
+	_normalize_panels(doc)
 
 	total_qty = _total_qty(doc)
 	doc.garment_total_qty = total_qty
 
-	# Checked here rather than in `validate` so the user gets this message before
-	# ERPNext tries to process an order with no item lines.
-	_validate_specification(doc, total_qty)
-
+	# Completeness (product/fabric/sublimation/sleeve set, quantities entered) is
+	# only enforced at submit - see before_submit. A draft must stay freely saveable
+	# while it's being built up over several saves, same as any other Sales Order.
+	# It matters in practice: Frappe's Attach control calls frm.save() the instant a
+	# file is picked (frappe/public/js/frappe/form/controls/attach.js), so attaching
+	# artwork before the Size Matrix is filled in used to trigger this exact check
+	# and block on an unrelated action.
 	rate = get_price_for_order(doc)
 	doc.vf_matched_rate = rate or 0
 	doc.garmentos_price_status = "Priced" if rate else "Missing Price"
@@ -126,10 +174,15 @@ def before_validate(doc, method=None):
 
 
 def _validate_specification(doc, total_qty):
+	if not doc.get("product_type"):
+		frappe.throw(
+			frappe._("Add the garment to the <b>Items</b> table before saving."),
+			title=frappe._("No Item Selected"),
+		)
+
 	missing = [
 		label
 		for field, label in (
-			("product_type", "Product Type"),
 			("fabric", "Fabric"),
 			("sublimation_type", "Sublimation Type"),
 			("sleeve_type", "Sleeve Type"),
@@ -195,6 +248,12 @@ def before_submit(doc, method=None):
 		return
 
 	settings = get_settings()
+
+	# The order must be complete before it becomes a real, submitted document -
+	# checked here (not on every draft save) so building it up over several saves
+	# (e.g. attaching artwork before the Size Matrix is filled in) is never blocked.
+	_validate_specification(doc, _total_qty(doc))
+
 	rate = get_price_for_order(doc)
 
 	if not rate:
