@@ -9,20 +9,35 @@ on demand so nobody has to key them in by hand.
 
 ## Install
 
+On any bench that already has ERPNext fetched (`bench get-app erpnext` if not):
+
 ```bash
-bench get-app vastraflow /path/to/vastraflow
+bench get-app https://github.com/notyetcoder/VastraFlow.git
 bench --site your-site install-app vastraflow
 ```
 
-That is the whole install. `after_install` creates the custom fields and fills
-VastraFlow Settings with working defaults.
+`bench get-app` clones the repo and installs its Python dependencies for you
+(VastraFlow has none beyond Frappe itself, so this step is instant). `required_apps =
+["erpnext"]` in `hooks.py` means `install-app` installs ERPNext onto the site first,
+automatically, if it isn't already installed there — you do not need a separate
+`bench install-app erpnext` call as long as ERPNext's app code is already on the bench.
+`after_install` then creates VastraFlow's custom fields and fills VastraFlow Settings
+with working defaults.
 
 Then open **VastraFlow Settings** and press **Load Starter Data** to create sample
 garments, fabrics, collars, trims, price rows and BOM recipes so you can try the
 flow immediately. The General tab shows a readiness checklist.
 
 Requires ERPNext (tested on v16). If you install onto a site whose ERPNext setup
-wizard has not run yet, the defaults are applied the first time you open Settings.
+wizard has not run yet, the defaults are applied the first time you open Settings —
+VastraFlow's own catalog/settings data does not require a Company to exist.
+
+**A Company is not created automatically.** ERPNext's Setup Wizard (or `bench
+new-site --setup ...` / manual Company creation) owns that, since it involves
+real business decisions (currency, chart of accounts, fiscal year) VastraFlow has
+no business guessing. VastraFlow's fabrics/colours/collar/price-matrix seed data
+installs fine with no Company present; you only need a real Company + Customer
+once you actually create and submit a Sales Order.
 
 ## The one rule that matters
 

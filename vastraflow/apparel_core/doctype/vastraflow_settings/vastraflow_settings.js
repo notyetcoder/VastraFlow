@@ -4,6 +4,7 @@ frappe.ui.form.on("VastraFlow Settings", {
 	refresh: function (frm) {
 		frm.add_custom_button(__("Load Starter Data"), () => load_starter_data(frm));
 		frm.add_custom_button(__("Re-sync Dropdowns"), () => resync_options(frm));
+		frm.add_custom_button(__("Bulk Submit Price Rows"), () => bulk_submit_prices(frm));
 
 		frm.add_custom_button(__("Price Matrix"), () =>
 			frappe.set_route("List", "VastraFlow Price Matrix")
@@ -152,6 +153,35 @@ function load_starter_data(frm) {
 						]),
 					});
 					frm.reload_doc();
+				},
+			});
+		}
+	);
+}
+
+function bulk_submit_prices(frm) {
+	frappe.confirm(
+		__(
+			"Submit every draft VastraFlow Price Matrix row? Use this right after a bulk import via Data Import - pricing only matches submitted rows."
+		),
+		() => {
+			frappe.call({
+				method: "vastraflow.apparel_core.api.bulk_submit_price_matrix",
+				freeze: true,
+				freeze_message: __("Submitting price rows..."),
+				callback: (r) => {
+					const result = r.message || {};
+					const failedCount = (result.failed || []).length;
+					frappe.msgprint({
+						title: __("Bulk Submit Complete"),
+						indicator: failedCount ? "orange" : "green",
+						message:
+							__("Submitted {0} price rows.", [result.submitted || 0]) +
+							(failedCount
+								? " " + __("{0} could not be submitted (see console for details).", [failedCount])
+								: ""),
+					});
+					if (failedCount) console.warn("VastraFlow bulk submit failures:", result.failed);
 				},
 			});
 		}

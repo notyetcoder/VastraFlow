@@ -136,6 +136,33 @@ def load_starter_data():
 
 
 @frappe.whitelist()
+def bulk_submit_price_matrix():
+	"""Submit every draft VastraFlow Price Matrix row in one call.
+
+	Pairs with Frappe's own Data Import tool (Setup > Data Import), which already
+	handles bulk-creating Price Matrix rows for any doctype - it just leaves them as
+	drafts, and pricing only ever matches a submitted row. This closes that one gap
+	so "import a price list" is import -> one click, not import -> open every row.
+	"""
+	frappe.only_for("System Manager")
+
+	names = frappe.get_all("VastraFlow Price Matrix", filters={"docstatus": 0}, pluck="name")
+	submitted, failed = [], []
+
+	for name in names:
+		try:
+			doc = frappe.get_doc("VastraFlow Price Matrix", name)
+			doc.submit()
+			submitted.append(name)
+		except Exception as exc:
+			failed.append({"name": name, "error": str(exc)})
+
+	frappe.db.commit()
+	get_logger().info(f"Bulk-submitted {len(submitted)} Price Matrix rows ({len(failed)} failed)")
+	return {"submitted": len(submitted), "failed": failed}
+
+
+@frappe.whitelist()
 def get_attribute_values(attribute_name: str):
 	"""Values of an Item Attribute, in display order."""
 	try:
@@ -149,6 +176,90 @@ def get_attribute_values(attribute_name: str):
 	except Exception as exc:
 		get_logger().error(f"Attribute lookup failed for {attribute_name}: {exc}")
 		return []
+
+
+# --- Frequency-sorted item pickers --------------------------------------------
+#
+# Frappe's own default Link query already sorts by `idx desc` (a built-in, global
+# "how often is this document linked to" counter, bumped by a background job on
+# every save) - but that counter is bumped by *every* doctype that links to an
+# Item anywhere on the site (Purchase Orders, Stock Entries, BOMs...), and only
+# when the background worker actually processes the job. For "which fabric do I
+# pick most for garment orders", a direct count from this app's own Sales Orders
+# is both more on-target and doesn't depend on background job timing at all.
+
+
+def _frequency_sorted_items(filters, txt: str, page_len: int, usage_field: str | None):
+	"""Every Item matching `filters` (+ text search), ordered by how often it has
+	been used on a garment order - most first, alphabetical among ties.
+
+	usage_field: "fabric" or "collar_type" (a Sales Order field) to count directly
+	off Sales Order, or None to count via Sales Order Item.item_code (the garment
+	itself, picked in the Items table).
+	"""
+	if isinstance(filters, str):
+		filters = frappe.parse_json(filters)
+	filters = dict(filters or {})
+	filters["disabled"] = 0
+
+	or_filters = None
+	if txt:
+		or_filters = [["item_code", "like", f"%{txt}%"], ["item_name", "like", f"%{txt}%"]]
+
+	items = frappe.get_list(
+		"Item",
+		filters=filters,
+		or_filters=or_filters,
+		fields=["name", "item_name"],
+		limit_page_length=0,
+		order_by="item_name asc",
+	)
+	if not items:
+		return []
+
+	codes = [i.name for i in items]
+	if usage_field:
+		counts = frappe.db.sql(
+			f"""
+			SELECT `{usage_field}` AS item_code, COUNT(*) AS cnt
+			FROM `tabSales Order`
+			WHERE is_garment_order = 1 AND `{usage_field}` IN %(codes)s
+			GROUP BY `{usage_field}`
+			""",  # nosec - usage_field is one of two hardcoded literals below, never user input
+			{"codes": codes},
+			as_dict=True,
+		)
+	else:
+		counts = frappe.db.sql(
+			"""
+			SELECT soi.item_code AS item_code, COUNT(*) AS cnt
+			FROM `tabSales Order Item` soi
+			INNER JOIN `tabSales Order` so ON so.name = soi.parent
+			WHERE so.is_garment_order = 1 AND soi.item_code IN %(codes)s
+			GROUP BY soi.item_code
+			""",
+			{"codes": codes},
+			as_dict=True,
+		)
+	frequency = {c.item_code: c.cnt for c in counts}
+
+	items.sort(key=lambda i: (-frequency.get(i.name, 0), i.item_name or i.name))
+	return [(i.name, i.item_name) for i in items[: int(page_len or 20)]]
+
+
+@frappe.whitelist()
+def product_link_query(doctype, txt, searchfield, start, page_len, filters):
+	return _frequency_sorted_items(filters, txt, page_len, usage_field=None)
+
+
+@frappe.whitelist()
+def fabric_link_query(doctype, txt, searchfield, start, page_len, filters):
+	return _frequency_sorted_items(filters, txt, page_len, usage_field="fabric")
+
+
+@frappe.whitelist()
+def collar_link_query(doctype, txt, searchfield, start, page_len, filters):
+	return _frequency_sorted_items(filters, txt, page_len, usage_field="collar_type")
 
 
 @frappe.whitelist()

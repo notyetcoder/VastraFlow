@@ -116,7 +116,46 @@ def compute_fabric_qty(doc, rule, settings) -> float:
 	return max(base + ((average - base_size) / step) * extra, 0.0)
 
 
-def compute_signature(spec, settings, fabric_qty: float | None = None) -> str:
+def _rule_fingerprint(rule, settings) -> str:
+	"""Hash of everything that decides *what* a BOM contains.
+
+	Included in the reuse signature so that editing a VastraFlow BOM Rule (or, when
+	there is no rule, the Manufacturing fallback defaults) naturally produces a fresh
+	BOM for the next order instead of silently reusing a BOM built under the old
+	numbers. Orders already linked to an existing BOM are unaffected - only the
+	*next* order gets a new one, which is the correct behaviour: history is never
+	rewritten under a submitted document.
+	"""
+	if rule:
+		fields = [
+			rule.use_order_fabric,
+			rule.fixed_fabric_item,
+			rule.fabric_qty_per_unit,
+			rule.fabric_uom,
+			rule.size_scaling,
+			rule.base_size,
+			rule.fabric_per_size_step,
+			rule.include_collar,
+			rule.collar_qty_per_unit,
+		]
+		components = [
+			(c.item_code, flt(c.qty_per_unit), c.uom, c.basis, c.apply_if_sleeve)
+			for c in (rule.components or [])
+		]
+	else:
+		fields = [
+			settings.default_fabric_qty,
+			settings.default_fabric_uom,
+			settings.include_collar_in_bom,
+			settings.default_collar_qty,
+		]
+		components = []
+
+	payload = "|".join(str(f) for f in fields) + "||" + "|".join(str(c) for c in components)
+	return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:10]
+
+
+def compute_signature(spec, settings, fabric_qty: float | None = None, rule=None) -> str:
 	"""Stable key for "two orders that can share one BOM"."""
 	parts = [
 		spec.product_type or "",
@@ -126,6 +165,7 @@ def compute_signature(spec, settings, fabric_qty: float | None = None) -> str:
 		spec.stitching_type or "",
 		spec.button_quantity or "",
 		spec.company or "",
+		_rule_fingerprint(rule, settings),
 	]
 
 	if settings.signature_includes_sublimation:
@@ -260,7 +300,7 @@ def get_or_create_bom(doc, raise_on_error: bool = True) -> str | None:
 		)
 
 	fabric_qty = compute_fabric_qty(doc, rule, settings)
-	signature = compute_signature(spec, settings, fabric_qty)
+	signature = compute_signature(spec, settings, fabric_qty, rule)
 
 	if settings.reuse_matching_bom:
 		existing = find_existing_bom(signature, spec.product_type)
@@ -410,7 +450,7 @@ def preview_bom(sales_order: str):
 	spec = build_spec(doc)
 	rule = get_bom_rule(spec.product_type)
 	fabric_qty = compute_fabric_qty(doc, rule, settings)
-	signature = compute_signature(spec, settings, fabric_qty)
+	signature = compute_signature(spec, settings, fabric_qty, rule)
 
 	return {
 		"signature": signature,
